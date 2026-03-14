@@ -49,10 +49,13 @@ World.create(document.getElementById("scene-container") as HTMLDivElement, {
 
 
     // ------------------------------------------------------------
-    // Gaussian Splat
+    // Gaussian Splat (use ?splat=./splats/your-file.spz to load custom)
     // ------------------------------------------------------------
+    const splatUrl =
+      new URLSearchParams(window.location.search).get("splat") ??
+      "./splats/sensai.spz";
     const splatEntity = world.createTransformEntity();
-    splatEntity.addComponent(GaussianSplatLoader);
+    splatEntity.addComponent(GaussianSplatLoader, { splatUrl });
 
     const splatSystem = world.getSystem(GaussianSplatLoaderSystem)!;
 
