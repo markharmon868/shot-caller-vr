@@ -52,12 +52,12 @@ class EditorApp {
     this.initPlacer();
     this.initUI();
 
-    // Auto-load splat from ?spz= query param if present
-    const spzUrl = new URLSearchParams(window.location.search).get("spz");
-    if (spzUrl) {
-      (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
-      this.loadSplat(spzUrl);
-    }
+    // Auto-load splat: ?spz= param takes priority, otherwise load default
+    const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
+    const spzUrl =
+      new URLSearchParams(window.location.search).get("spz") ?? DEFAULT_SPLAT;
+    (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
+    this.loadSplat(spzUrl);
 
     // Try to restore saved scene
     const restored = this.state.loadLocal();
@@ -104,10 +104,11 @@ class EditorApp {
     dir.position.set(8, 14, 6);
     this.scene.add(dir);
 
-    // SparkJS renderer for Gaussian splats
+    // SparkJS renderer for Gaussian splats — LoD on for sensai-lod.spz
     this.spark = new SparkRenderer({
       renderer: this.renderer,
-      enableLod: false, // LoD off for desktop (no camera clone workaround needed)
+      enableLod: true,
+      lodSplatScale: 1.0,
     });
     this.spark.renderOrder = -10;
     this.scene.add(this.spark);
@@ -279,7 +280,8 @@ class EditorApp {
         this.splat = null;
       }
 
-      const splat = new SplatMesh({ url });
+      const isLod = url.includes("-lod.");
+      const splat = new SplatMesh({ url, lod: isLod || undefined });
       await splat.initialized;
       splat.renderOrder = -10;
       this.scene.add(splat);
