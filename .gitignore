@@ -140,6 +140,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Local analysis artifacts
+REPO_EXPLORATION_REPORT.md
+webxr_filmmaker_architecture_vertical.svg
+
+# Generated UIKit output; source of truth lives in ui/*.uikitml
+public/ui/*.json
 # Pipeline data (keep structure, ignore images)
 pipeline/data/raw/*
 !pipeline/data/raw/.gitkeep
