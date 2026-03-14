@@ -137,3 +137,11 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Pipeline data (keep structure, ignore images)
+pipeline/data/raw/*
+!pipeline/data/raw/.gitkeep
+pipeline/data/expanded/*
+!pipeline/data/expanded/.gitkeep
+pipeline/data/output/*
+!pipeline/data/output/.gitkeep
