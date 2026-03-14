@@ -53,16 +53,19 @@ class EditorApp {
     this.initUI();
 
     // Auto-load splat: ?spz= param takes priority, otherwise load default
+    // Restore saved scene first so we get the saved splatUrl if any
+    const restored = this.state.loadLocal();
+
     const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
     const spzUrl =
-      new URLSearchParams(window.location.search).get("spz") ?? DEFAULT_SPLAT;
+      new URLSearchParams(window.location.search).get("spz") ??
+      (restored ? this.state.getSplatUrl() : null) ??
+      DEFAULT_SPLAT;
     (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
     this.loadSplat(spzUrl);
 
-    // Try to restore saved scene
-    const restored = this.state.loadLocal();
     if (restored) {
-      this.setStatus(`Restored scene ${this.state.id}`);
+      this.setStatus(`Scene restored — ${this.state.elements.size} element(s) loaded`);
     }
 
     window.addEventListener("resize", this.onResize);
@@ -185,7 +188,11 @@ class EditorApp {
     // Save / Export
     document.getElementById("save-scene-btn")!.addEventListener("click", () => {
       this.state.saveToKV();
-      this.setStatus(`Scene ${this.state.id} saved`);
+      this.setStatus(`Scene saved`);
+    });
+    document.getElementById("preview-vr-btn")!.addEventListener("click", () => {
+      this.state.saveToKV();
+      window.location.href = "/?mode=stage4-xr";
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();

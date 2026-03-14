@@ -62,21 +62,16 @@ export class SceneState {
   readonly elements = new Map<string, ProductionElement>();
 
   constructor(private scene: THREE.Scene) {
-    // Try to restore scene ID from URL hash, else generate new
+    // Always use the fixed "demo" scene ID so the editor and VR mode
+    // share the same localStorage key regardless of URL navigation.
     const hash = new URLSearchParams(window.location.hash.slice(1));
-    this.sceneId = hash.get("scene") ?? generateId();
-    this.updateHash();
-  }
-
-  private updateHash(): void {
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    hash.set("scene", this.sceneId);
-    window.location.hash = hash.toString();
+    this.sceneId = hash.get("scene") ?? "demo";
   }
 
   get id(): string { return this.sceneId; }
 
   setSplatUrl(url: string): void { this.splatUrl = url; }
+  getSplatUrl(): string { return this.splatUrl; }
 
   addElement(el: ProductionElement): void {
     this.elements.set(el.id, el);
@@ -112,7 +107,6 @@ export class SceneState {
 
     this.sceneId = data.id;
     this.splatUrl = data.splatUrl;
-    this.updateHash();
 
     for (const ed of data.elements) {
       const el = createElementById(ed.id, ed.type, ed.name);
@@ -130,6 +124,8 @@ export class SceneState {
   saveLocal(): void {
     const data = this.toJSON();
     localStorage.setItem(STORAGE_KEY_PREFIX + this.sceneId, JSON.stringify(data));
+    // Bridge: also write elements in SceneBundle format so stage4-xr can read them
+    this.saveBridgeElements(data);
     console.log(`[SceneState] Saved scene ${this.sceneId} to localStorage`);
   }
 
@@ -176,6 +172,83 @@ export class SceneState {
       console.warn("[SceneState] Vercel KV load failed, trying localStorage:", e);
       return this.loadLocal(sceneId);
     }
+  }
+
+  // ── SceneBundle bridge (editor → stage4-xr) ───────────────────────────────
+  // Converts editor elements to the SceneBundle element format and writes them
+  // to localStorage under the key sceneStore reads, so the VR review loads the
+  // same elements you placed in the editor.
+
+  private saveBridgeElements(data: SceneData): void {
+    const kindMap: Record<string, string> = {
+      camera:    "camera",
+      light:     "light",
+      cast_mark: "castMark",
+      crew:      "crew",
+      equipment: "equipment",
+    };
+    const assetMap: Record<string, string> = {
+      camera:    "asset-camera",
+      light:     "asset-light",
+      cast_mark: "asset-cast-mark",
+      crew:      "asset-crew",
+      equipment: "asset-equipment",
+    };
+
+    const bundleElements = data.elements.map((el) => {
+      const kind = kindMap[el.type] ?? el.type;
+      const p = el.properties;
+
+      let properties: Record<string, unknown>;
+      switch (el.type) {
+        case "camera":
+          properties = {
+            focalLengthMm: p.focalLength ?? 35,
+            fovDeg: Math.round(
+              (2 * Math.atan(24 / (2 * Number(p.focalLength ?? 35))) * 180) / Math.PI
+            ),
+            rangeMeters: p.fovDistance ?? 4,
+          };
+          break;
+        case "light":
+          properties = {
+            spreadDeg: p.coneAngle ?? 40,
+            rangeMeters: p.coneDistance ?? 3,
+            colorTemperatureKelvin: p.colorTemp ?? 5600,
+          };
+          break;
+        case "cast_mark":
+          properties = { characterName: p.actorName ?? el.name };
+          break;
+        case "crew":
+          properties = { role: p.department ?? "Camera" };
+          break;
+        case "equipment":
+          properties = { clearanceRadiusMeters: 1.0 };
+          break;
+        default:
+          properties = { clearanceRadiusMeters: 1.0 };
+      }
+
+      return {
+        id: el.id,
+        kind,
+        assetId: assetMap[el.type] ?? "asset-equipment",
+        label: el.name,
+        transform: {
+          position: el.position,
+          rotation: [0, el.rotationY, 0],
+          scale: [1, 1, 1],
+        },
+        properties,
+      };
+    });
+
+    // sceneStore reads from key "shot-caller:elements:{sceneId}"
+    localStorage.setItem(
+      `shot-caller:elements:demo`,
+      JSON.stringify(bundleElements)
+    );
   }
 
   // ── Export helpers ─────────────────────────────────────────────────────────

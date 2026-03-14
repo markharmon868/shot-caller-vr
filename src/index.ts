@@ -24,19 +24,17 @@ type XrNavigator = Navigator & {
   };
 };
 
-function parseMode(value: string | null): StageReviewMode {
+function parseMode(value: string | null): StageReviewMode | "editor" {
   switch (value) {
     case "stage4-xr":
-    case "stage5-xr":
-    case "viewer":
-    case "export":
       return value;
+    case "editor":
     default:
-      return "viewer";
+      return "editor";
   }
 }
 
-async function checkXrSupport(mode: StageReviewMode): Promise<boolean> {
+async function checkXrSupport(mode: StageReviewMode | "editor"): Promise<boolean> {
   if (mode !== "stage4-xr" && mode !== "stage5-xr") {
     return false;
   }
@@ -79,12 +77,19 @@ function syncBridge(bundle: SceneBundle, mode: StageReviewMode, error: string | 
 }
 
 function syncRuntimeIssues(runtime: RuntimeApp, bundle: SceneBundle): void {
-  if (runtime instanceof ViewerApp || runtime instanceof XrReviewApp) {
+  if (runtime instanceof XrReviewApp) {
+    runtime.syncIssues();
+  } else if (runtime instanceof ViewerApp) {
     runtime.updateIssues();
   }
 }
 
-async function bootstrap(): Promise<void> {
+async function bootstrapEditor(): Promise<void> {
+  const { startEditor } = await import("./editor/EditorApp.js");
+  startEditor();
+}
+
+async function bootstrapReview(): Promise<void> {
   const sceneContainer = document.getElementById("scene-container") as HTMLDivElement | null;
   const shellRoot = document.getElementById("shell-root") as HTMLDivElement | null;
   if (!sceneContainer || !shellRoot) {
@@ -93,7 +98,7 @@ async function bootstrap(): Promise<void> {
 
   const url = new URL(window.location.href);
   const sceneId = url.searchParams.get("scene") ?? "demo";
-  const mode = parseMode(url.searchParams.get("mode"));
+  const mode = "stage4-xr" as StageReviewMode;
   const shell = createBrowserShell(shellRoot);
 
   reviewBridge.setState({
@@ -280,37 +285,18 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-void bootstrap().catch((error: unknown) => {
-  reviewBridge.setState({
-    error: error instanceof Error ? error.message : "Application bootstrap failed.",
-  });
-});
-// Shot Caller — entry point
-// Routes to Web3D editor (desktop) or PICO VR walkthrough based on device.
-export {};
+// ── Entry point routing ─────────────────────────────────────────────────────
+// (default)       → Web3D Planning Editor  — place cameras, lights, cast marks
+// ?mode=stage4-xr → PICO VR walkthrough    — walk the scene you just blocked
 
-/**
- * Detect a real VR headset browser by user agent.
- * IWER injects WebXR on desktop too, so XR support alone isn't enough.
- * PICO browser: "PicoXR" | Quest browser: "OculusBrowser" | generic WebXR: "WebXR"
- */
-function isHeadsetBrowser(): boolean {
-  const ua = navigator.userAgent;
-  return /PicoXR|OculusBrowser|SamsungBrowser\/.*VR|Mobile VR|Quest/i.test(ua);
-}
+const mode = parseMode(new URLSearchParams(window.location.search).get("mode"));
 
-// URL param ?mode=vr forces VR world (useful for testing on desktop without headset)
-// URL param ?mode=editor forces editor (useful if headset browser needs editor view)
-const modeParam = new URLSearchParams(window.location.search).get("mode");
-
-const useVR = modeParam === "vr" || (modeParam !== "editor" && isHeadsetBrowser());
-
-if (useVR) {
-  // Mode 2 — PICO VR Walkthrough
-  const { startXRWorld } = await import("./xrWorld.js");
-  startXRWorld();
+if (mode === "editor") {
+  void bootstrapEditor();
 } else {
-  // Mode 1 — Web3D Planning Editor
-  const { startEditor } = await import("./editor/EditorApp.js");
-  startEditor();
+  void bootstrapReview().catch((error: unknown) => {
+    reviewBridge.setState({
+      error: error instanceof Error ? error.message : "Application bootstrap failed.",
+    });
+  });
 }

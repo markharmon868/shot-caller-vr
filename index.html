@@ -2,16 +2,6 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <title>Shot Caller Stage Review</title>
-  </head>
-  <body>
-    <div id="app-root">
-      <div id="scene-container"></div>
-      <div id="shell-root"></div>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Shot Caller — Production Blocking Tool</title>
     <style>
@@ -248,14 +238,13 @@
   <body>
     <div id="app">
 
-      <!-- ── Editor Sidebar ───────────────────────────────── -->
+      <!-- Editor sidebar — shown only in ?mode=editor (default) -->
       <div id="editor-sidebar">
         <div class="sidebar-header">
           <h1>Shot Caller</h1>
           <p>Production Blocking Tool</p>
         </div>
 
-        <!-- Scene load -->
         <div class="sidebar-section">
           <div class="section-title">Scene</div>
           <div class="spz-row">
@@ -264,7 +253,6 @@
           <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Gaussian Scene</button>
         </div>
 
-        <!-- Element tools -->
         <div class="sidebar-section">
           <div class="section-title">Place Elements</div>
           <div class="tool-grid">
@@ -289,25 +277,23 @@
           </div>
         </div>
 
-        <!-- Properties (filled dynamically) -->
         <div class="sidebar-section" id="properties-section">
           <div class="section-title">Properties</div>
           <div id="properties-panel"></div>
           <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete Element</button>
         </div>
 
-        <!-- Scene actions -->
         <div class="sidebar-section">
           <div class="section-title">Scene</div>
           <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
+          <button id="preview-vr-btn" class="btn" style="border-color:#818cf8;color:#818cf8">Preview in VR ↗</button>
           <button id="export-json-btn" class="btn">Export JSON</button>
         </div>
 
-        <!-- Status -->
         <div id="status-bar">Ready — load a .spz scene or start placing elements</div>
       </div>
 
-      <!-- ── 3D Viewport ──────────────────────────────────── -->
+      <!-- 3D viewport — used by both editor and review modes -->
       <div id="scene-container">
         <div id="loading-overlay">
           <div id="loading-spinner"></div>
@@ -320,6 +306,9 @@
           Rotate selected: R / Shift+R
         </div>
       </div>
+
+      <!-- Shell root — used by reviewer HUD (?mode=viewer/stage4-xr/stage5-xr) -->
+      <div id="shell-root"></div>
 
     </div>
     <script type="module" src="/src/index.ts"></script>
