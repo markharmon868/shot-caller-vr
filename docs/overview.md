@@ -17,7 +17,7 @@ The project is based on the SensAI WebXR Worldmodels template, which combines We
 - **Stage:** Early/template. Core infrastructure is in place; filmmaker-specific workflows are not yet built.
 - **Working:** Gaussian splat worldmodel loading and rendering, locomotion (teleport, smooth movement), grabbing, spatial UI, IWSDK headset simulator for desktop testing, Level-of-Detail (LoD) splat rendering for Quest/PICO.
 - **Not yet implemented:** Generative world creation, shot planning UI, set idea generation, filmmaker-focused features.
-- **In progress:** Data pipeline (Street View → Nano Banana 2.5 → world model input). See `pipeline/README.md`.
+- **In progress:** Data pipeline: Street View (multi-heading) → Nano Banana 2 expansion → output → world model (Marble/Luma stub). Load custom splats via `?splat=./splats/your-file.spz`. See `pipeline/README.md`.
 
 ---
 
