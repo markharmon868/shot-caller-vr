@@ -112,6 +112,7 @@ export class SceneState {
       const el = createElementById(ed.id, ed.type, ed.name);
       el.setPosition(...ed.position);
       el.setRotationY(ed.rotationY);
+      if (ed.scale) el.setScale(...ed.scale);
       for (const [k, v] of Object.entries(ed.properties)) {
         el.setProperty(k, v);
       }

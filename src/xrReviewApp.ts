@@ -18,12 +18,13 @@ function loadEditorElements(scene: THREE.Scene): ProductionElement[] {
   const raw = localStorage.getItem(SCENE_STORAGE_KEY);
   if (!raw) return [];
   try {
-    const data = JSON.parse(raw) as { elements?: Array<{ id: string; type: string; name: string; position: [number, number, number]; rotationY: number; properties: Record<string, unknown> }> };
+    const data = JSON.parse(raw) as { elements?: Array<{ id: string; type: string; name: string; position: [number, number, number]; rotationY: number; scale?: [number, number, number]; properties: Record<string, unknown> }> };
     const elements: ProductionElement[] = [];
     for (const ed of data.elements ?? []) {
       const el = createElementById(ed.id, ed.type, ed.name);
       el.setPosition(...ed.position);
       el.setRotationY(ed.rotationY);
+      if (ed.scale) el.setScale(...ed.scale);
       for (const [k, v] of Object.entries(ed.properties)) el.setProperty(k, v);
       scene.add(el.group);
       elements.push(el);

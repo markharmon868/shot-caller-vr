@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
 import { AssetPlacer, type ToolType } from "./AssetPlacer.js";
 import { SceneState } from "./SceneState.js";
@@ -15,6 +16,8 @@ class EditorApp {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private controls!: OrbitControls;
+  private transformControls!: TransformControls;
+  private gizmoMode: "translate" | "rotate" | "scale" = "translate";
   private spark!: SparkRenderer;
   private splat: SplatMesh | null = null;
   private floor!: THREE.Mesh;
@@ -96,6 +99,15 @@ class EditorApp {
     this.controls.minDistance = 1;
     this.controls.maxDistance = 80;
     this.controls.target.set(0, 0, 0);
+
+    this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
+    this.transformControls.setMode("translate");
+    this.transformControls.setSize(0.8);
+    // Disable orbit while dragging gizmo handles
+    this.transformControls.addEventListener("dragging-changed", (e) => {
+      this.controls.enabled = !e.value;
+      this.placer.gizmoActive = Boolean(e.value);
+    });
   }
 
   private initScene(): void {
@@ -131,6 +143,9 @@ class EditorApp {
     (grid.material as THREE.Material).transparent = true;
     (grid.material as THREE.Material).opacity = 0.5;
     this.scene.add(grid);
+
+    // TransformControls added after initRenderer so this.transformControls exists
+    // It will be added to scene in initPlacer after both are ready
   }
 
   private initState(): void {
@@ -151,6 +166,9 @@ class EditorApp {
     this.placer.onPlace = (el) => console.log("[Editor] Placed:", el.name);
     this.placer.onDelete = (_el) => this.onElementSelected(null);
     this.placer.onStatusChange = (msg) => this.setStatus(msg);
+
+    // Add TransformControls to scene now that both scene and placer exist
+    this.scene.add(this.transformControls.getHelper());
   }
 
   // ── UI wiring ──────────────────────────────────────────────────────────────
@@ -208,8 +226,23 @@ class EditorApp {
       }
     });
 
-    // When Escape pressed while tool active, reset tool button to Select
+    // Gizmo mode buttons
+    document.querySelectorAll<HTMLButtonElement>(".gizmo-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.setGizmoMode(btn.dataset.gizmo as "translate" | "rotate" | "scale");
+      });
+    });
+
+    // Keyboard shortcuts
     window.addEventListener("keydown", (e) => {
+      if (e.target instanceof HTMLInputElement) return; // don't steal input focus
+
+      // W/E/R = gizmo mode (Unity-style), only when an element is selected
+      if (e.key === "w" || e.key === "W") { this.setGizmoMode("translate"); return; }
+      if (e.key === "e" || e.key === "E") { this.setGizmoMode("rotate"); return; }
+      if (e.key === "r" || e.key === "R") { this.setGizmoMode("scale"); return; }
+
+      // Escape: cancel placement tool
       if (e.key === "Escape" && this.placer.currentTool !== "select") {
         document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
         document.querySelector('.tool-btn[data-tool="select"]')?.classList.add("active");
@@ -220,11 +253,22 @@ class EditorApp {
 
   // ── Properties panel ───────────────────────────────────────────────────────
 
+  private setGizmoMode(mode: "translate" | "rotate" | "scale"): void {
+    this.gizmoMode = mode;
+    this.transformControls.setMode(mode);
+    document.querySelectorAll(".gizmo-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelector(`.gizmo-btn[data-gizmo="${mode}"]`)?.classList.add("active");
+  }
+
   private onElementSelected(el: ProductionElement | null): void {
     if (!el) {
       this.propertiesSection.classList.remove("visible");
+      this.transformControls.detach();
       return;
     }
+
+    this.transformControls.attach(el.group);
+    this.transformControls.setMode(this.gizmoMode);
 
     this.propertiesSection.classList.add("visible");
     this.propertiesPanel.innerHTML = this.buildPropsHTML(el);

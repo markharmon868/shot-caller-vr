@@ -6,6 +6,7 @@ export interface ElementData {
   name: string;
   position: [number, number, number];
   rotationY: number;
+  scale?: [number, number, number];
   properties: Record<string, unknown>;
 }
 
@@ -55,6 +56,14 @@ export abstract class ProductionElement {
   abstract getProperties(): Record<string, unknown>;
   abstract setProperty(key: string, value: unknown): void;
 
+  setScale(x: number, y: number, z: number): void {
+    this.group.scale.set(x, y, z);
+  }
+
+  getScale(): [number, number, number] {
+    return [this.group.scale.x, this.group.scale.y, this.group.scale.z];
+  }
+
   /** Serialise to plain JSON for Vercel KV / localStorage */
   serialize(): ElementData {
     return {
@@ -67,6 +76,7 @@ export abstract class ProductionElement {
         this.group.position.z,
       ],
       rotationY: this.group.rotation.y,
+      scale: this.getScale(),
       properties: this.getProperties(),
     };
   }
