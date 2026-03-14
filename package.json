@@ -6,14 +6,22 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pipeline:fetch": "tsx pipeline/scripts/fetch-street-view.ts",
+    "pipeline:expand": "tsx pipeline/scripts/expand-images.ts",
+    "pipeline:output": "tsx pipeline/scripts/prepare-output.ts",
+    "pipeline:generate": "tsx pipeline/scripts/generate-splat.ts",
+    "pipeline:run": "tsx pipeline/scripts/run-pipeline.ts"
   },
   "dependencies": {
     "@iwsdk/core": "0.2.2",
     "@sparkjsdev/spark": "github:sparkjsdev/spark#v2.0.0-preview",
+    "replicate": "^0.34.0",
     "three": "npm:super-three@0.181.0"
   },
   "devDependencies": {
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
     "@iwsdk/vite-plugin-gltf-optimizer": "0.2.2",
     "@iwsdk/vite-plugin-iwer": "0.2.2",
     "@iwsdk/vite-plugin-uikitml": "0.2.2",

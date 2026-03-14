@@ -1,0 +1,5 @@
+# Pipeline-specific ignores (in addition to root .gitignore)
+# Raw/expanded/output contents are ignored via root .gitignore
+*.tmp
+*.temp
+.cache
