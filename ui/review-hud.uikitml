@@ -1,0 +1,59 @@
+<style>
+  .hud {
+    display: flex;
+    flex-direction: column;
+    width: 48;
+    padding: 2.5;
+    border-radius: 2;
+    background-color: #111827;
+    border-color: #38bdf8;
+    border-width: 0.18;
+  }
+
+  .title {
+    font-size: 2.2;
+    color: #f8fafc;
+    font-weight: bold;
+  }
+
+  .meta {
+    font-size: 1.35;
+    color: #cbd5e1;
+    margin-top: 0.6;
+  }
+
+  .status {
+    font-size: 1.5;
+    color: #fbbf24;
+    margin-top: 1.1;
+  }
+
+  .button {
+    width: 100%;
+    margin-top: 1.2;
+    padding: 1.1;
+    border-radius: 1.3;
+    background-color: #0f172a;
+    color: #f8fafc;
+    text-align: center;
+    font-size: 1.55;
+  }
+
+  .button-primary {
+    background-color: #0284c7;
+  }
+
+  .button-danger {
+    background-color: #be123c;
+  }
+</style>
+<div class="hud">
+  <span class="title">Shot Caller Review</span>
+  <span id="scene-label" class="meta">Scene: demo</span>
+  <span id="mode-label" class="meta">Mode: viewer</span>
+  <span id="selection-label" class="meta">Focus: none</span>
+  <span id="issue-label" class="status">Issues: 0</span>
+  <button id="xr-button" class="button">Enter XR</button>
+  <button id="primary-button" class="button button-primary">Primary Action</button>
+  <button id="secondary-button" class="button button-danger">Secondary Action</button>
+</div>
