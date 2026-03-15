@@ -1,14 +1,14 @@
 #!/usr/bin/env npx tsx
 /**
- * Expand raw Street View images with Nano Banana 2.
+ * Expand raw Street View images with Nano Banana (Gemini).
  * Reads from pipeline/data/raw/, writes to pipeline/data/expanded/.
  * Usage: npx tsx pipeline/scripts/expand-images.ts [--skip] [--aspect 16:9]
  *
- * --skip  Skip expansion if REPLICATE_API_TOKEN not set (copy raw to expanded)
+ * --skip  Skip expansion if GOOGLE_API_KEY not set (copy raw to expanded)
  * --aspect  Aspect ratio for expansion (default 16:9)
  */
 import "../env.js";
-import { expandImage } from "../image-expansion/index.js";
+import { expandImage } from "../nano-banana.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -41,9 +41,9 @@ async function main() {
     return;
   }
 
-  const hasToken = !!process.env.REPLICATE_API_TOKEN;
+  const hasToken = !!process.env.GOOGLE_API_KEY;
   if (!hasToken && skip) {
-    console.log("REPLICATE_API_TOKEN not set (--skip). Copying raw to expanded.");
+    console.log("GOOGLE_API_KEY not set (--skip). Copying raw to expanded.");
     for (const f of files) {
       const src = path.join(rawDir, f);
       const dest = path.join(expandedDir, f.replace(/\.[^.]+$/, ".jpg"));
@@ -54,7 +54,7 @@ async function main() {
   }
 
   if (!hasToken) {
-    console.error("REPLICATE_API_TOKEN required. Add to .env or use --skip.");
+    console.error("GOOGLE_API_KEY required. Add to .env or use --skip.");
     process.exit(1);
   }
 

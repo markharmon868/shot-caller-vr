@@ -34,6 +34,10 @@ export function hasSceneId(url: URL): boolean {
   return Boolean(url.searchParams.get("scene")?.trim());
 }
 
+export function isDemoMode(url: URL): boolean {
+  return url.searchParams.get("demo") === "1";
+}
+
 export function resolveAppMode(url: URL, userAgent: string): AppMode {
   const explicitMode = url.searchParams.get("mode");
   const headset = isHeadsetBrowser(userAgent);

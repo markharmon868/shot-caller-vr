@@ -42,8 +42,8 @@ class EditorApp {
 
   // DOM elements
   private container!: HTMLElement;
-  private sidebar!: HTMLElement;
-  private statusBar!: HTMLElement;
+  private statusText!: HTMLElement;
+  private elementCount!: HTMLElement;
   private loadingOverlay!: HTMLElement;
   private loadingText!: HTMLElement;
   private propertiesSection!: HTMLElement;
@@ -51,16 +51,15 @@ class EditorApp {
   private keyboardHint!: HTMLElement;
 
   init(): void {
-    this.container = document.getElementById("scene-container")!;
-    this.sidebar = document.getElementById("editor-sidebar")!;
-    this.statusBar = document.getElementById("status-bar")!;
+    this.container = document.getElementById("canvas-wrapper")!;
+    this.statusText = document.getElementById("status-text")!;
+    this.elementCount = document.getElementById("element-count")!;
     this.loadingOverlay = document.getElementById("loading-overlay")!;
     this.loadingText = document.getElementById("loading-text")!;
     this.propertiesSection = document.getElementById("properties-section")!;
     this.propertiesPanel = document.getElementById("properties-panel")!;
     this.keyboardHint = document.getElementById("keyboard-hint")!;
 
-    this.sidebar.classList.add("visible");
     this.keyboardHint.classList.add("visible");
 
     this.initRenderer();
@@ -719,7 +718,10 @@ class EditorApp {
   }
 
   setStatus(msg: string): void {
-    this.statusBar.textContent = msg;
+    this.statusText.textContent = msg;
+    // Update element count in bottombar
+    const count = this.state?.elements.size ?? 0;
+    this.elementCount.textContent = `${count} element${count === 1 ? '' : 's'}`;
   }
 
   // ── Render loop ────────────────────────────────────────────────────────────
