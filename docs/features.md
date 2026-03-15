@@ -70,27 +70,23 @@ Allow actors, cameras, and equipment to have different positions per shot. Click
 
 ## Feature 2 — Location Scout Polish
 
-**Status:** Partially done — small remaining gaps
+**Status:** Mostly done — one gap remaining
 
 ### Done
 - Map picker, Street View preview, pipeline trigger, progress polling, "Open in Editor"
 - Coordinates locked until explicit map click (no accidental Hollywood submissions)
+- ✅ Address search: Google Places Autocomplete bound to map
+- ✅ Recent scenes persistence: job history written to `.data/pipeline-jobs.json`
 
-### Remaining Work
+### Remaining Work (none — all done)
 
-#### 2.1 Address Search
-- Add a search box to the map (Google Places Autocomplete) so users can type an address instead of clicking the map manually
+#### ✅ 2.2 No Street View Coverage Handling
+- Client-side: `StreetViewService.getPanorama()` check on every location pick; yellow inline warning if no coverage
+- Server-side: job error now surfaces `job.error` string (e.g. "No Street View coverage…") instead of the last progress message
 
-#### 2.2 No Street View Coverage Handling
-- Some locations have no Street View data — show a clear error message with a suggestion to try nearby
-
-#### 2.3 Recent Scenes Persistence
-- Currently the Recent Scenes list is in-memory only (lost on server restart)
-- Write job metadata to a `.data/pipeline-jobs.json` file so history survives restarts
-
-#### 2.4 Scout → Editor Splat Continuity
-- When "Open in Editor" is clicked, the editor should start fresh (clear previous elements) since it's a new location
-- Currently it restores the last saved scene which may have elements from a different splat
+#### ✅ 2.4 Scout → Editor Splat Continuity
+- Each pipeline job has a unique `sceneId`; new scenes have no localStorage entry → editor starts blank automatically
+- "Clear All Elements" button added to the editor Actions section for manually wiping a scene's elements
 
 ### Files
 - `src/scout/ScoutApp.ts` — Places Autocomplete, coverage error
@@ -110,20 +106,16 @@ Allow actors, cameras, and equipment to have different positions per shot. Click
 - "Preview in VR" button in editor
 - "Open in Editor →" button in scout after generation
 
+### Done
+- ✅ Back button in VR: "← Editor" link in VR overlay preserves scene + splat params
+- ✅ Scene ID threading: each pipeline job gets its own `sceneId`, editor and VR load per-scene elements
+- VR mode now uses `?mode=vr` (legacy `stage4-xr` still works)
+
 ### Remaining Work
 
-#### 3.1 Back Button in VR
-- A "Back to Editor" action in VR that returns to `/?mode=editor` without losing the scene
-- Could be a floating spatial UI button or triggered by a controller gesture
-
-#### 3.2 Scene ID Threading
-- The sceneId is currently hardcoded to `"demo"` for all scenes
-- Multiple saved scenes aren't distinguishable — the second generated splat overwrites the first
-- Each pipeline job should create its own sceneId and the editor should load elements specific to that scene
-
-#### 3.3 New Scene Flow
-- When opening a newly generated splat in the editor, start with a clean element slate
-- Add a "New Scene" button in the editor that clears elements and prompts for a splat URL
+#### ✅ 3.3 New Scene Flow
+- New scenes from scout have a unique `sceneId` → no localStorage entry on first open → starts blank automatically
+- "Clear All Elements" button in the editor sidebar lets users wipe and restart blocking on any scene
 
 ---
 
@@ -162,9 +154,7 @@ Generate a production-ready document from the blocked scene: shot list ordered b
 
 | # | Feature | Status | Effort | Value |
 |---|---------|--------|--------|-------|
-| 1 | Scene ID threading + new scene flow (Feature 3.2–3.3) | Remaining | Low | High |
-| 2 | Address search on scout map (Feature 2.1) | Remaining | Low | High |
-| 3 | Call Sheet Export (Feature 4) | Not started | Medium | High |
-| 4 | Back button in VR (Feature 3.1) | Remaining | Low | Medium |
-| 5 | Recent scenes persistence (Feature 2.3) | Remaining | Low | Medium |
-| 6 | Shot Sequencer + Keyframes (Feature 1) | Not started | High | Medium |
+| 1 | New Scene Flow — clear elements for new splat (3.3) | Remaining | Low | High |
+| 2 | Call Sheet Export — Claude-generated shot list + call times (Feature 4) | Not started | Medium | High |
+| 3 | No Street View coverage error (2.2) | Remaining | Low | Medium |
+| 4 | Shot Sequencer + Keyframes (Feature 1) | Not started | High | Medium |

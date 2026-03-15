@@ -271,6 +271,12 @@ class EditorApp {
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();
     });
+    document.getElementById("clear-elements-btn")!.addEventListener("click", () => {
+      if (!confirm("Clear all elements from this scene? This cannot be undone.")) return;
+      this.placer.selectElement(null);
+      this.state.clearElements();
+      this.setStatus("Scene cleared");
+    });
 
     // GLTF library — add from dropdown
     document.getElementById("gltf-add-btn")?.addEventListener("click", () => {

@@ -22,6 +22,7 @@ interface PipelineJob {
 let map: google.maps.Map;
 let panorama: google.maps.StreetViewPanorama;
 let marker: google.maps.Marker;
+let svService: google.maps.StreetViewService;
 let activeJobId: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -83,6 +84,7 @@ function initMap(): void {
     },
   });
 
+  svService = new window.google.maps.StreetViewService();
   map.setStreetView(panorama);
 
   // Map click → set location
@@ -151,6 +153,41 @@ function setLocation(lat: number, lng: number, source: string): void {
   // Store on button element as source of truth for submit
   const btn = document.getElementById("scout-generate-btn");
   if (btn) { btn.dataset.lat = String(lat); btn.dataset.lng = String(lng); }
+
+  // Check Street View coverage — warn if no imagery at this spot
+  clearCoverageWarning();
+  if (svService) {
+    svService.getPanorama(
+      { location: { lat, lng }, radius: 80, source: window.google.maps.StreetViewSource.OUTDOOR },
+      (_data: unknown, status: string) => {
+        if (status !== "OK") {
+          showCoverageWarning();
+        }
+      }
+    );
+  }
+}
+
+function showCoverageWarning(): void {
+  let el = document.getElementById("scout-coverage-warn");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "scout-coverage-warn";
+    el.style.cssText = [
+      "margin-top:8px", "padding:8px 10px", "border-radius:6px",
+      "background:rgba(245,158,11,0.12)", "border:1px solid rgba(245,158,11,0.4)",
+      "color:#fbbf24", "font-size:12px", "line-height:1.5",
+    ].join(";");
+    const btn = document.getElementById("scout-generate-btn");
+    btn?.parentElement?.insertBefore(el, btn);
+  }
+  el.textContent = "⚠ No Street View imagery found here. Try clicking on a road or path nearby.";
+  el.style.display = "block";
+}
+
+function clearCoverageWarning(): void {
+  const el = document.getElementById("scout-coverage-warn");
+  if (el) el.style.display = "none";
 }
 
 function updateCoords(lat: number, lng: number): void {
@@ -226,14 +263,24 @@ function pollStatus(jobId: string): void {
   fetch(`/api/pipeline/status/${jobId}`)
     .then((r) => r.json() as Promise<PipelineJob>)
     .then((job) => {
-      setStatus(job.progress, job.status === "error" ? "error" : job.status === "done" ? "done" : "running");
-      if (job.status === "done" && job.splatFilename) {
+      if (job.status === "error") {
         if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        showDoneState(job);
-      } else if (job.status === "error") {
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        const msg = job.error ?? job.progress;
+        const isCoverage = msg?.toLowerCase().includes("no street view");
+        setStatus(
+          isCoverage
+            ? "⚠ No Street View imagery at this location. Pick a spot on a road or path and try again."
+            : `Error: ${msg}`,
+          "error"
+        );
         activeJobId = null;
         setGenerateEnabled(true);
+      } else if (job.status === "done" && job.splatFilename) {
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        setStatus(job.progress, "done");
+        showDoneState(job);
+      } else {
+        setStatus(job.progress, "running");
       }
     })
     .catch(() => {});

@@ -144,6 +144,18 @@ export class SceneState {
     }
   }
 
+  clearElements(): void {
+    for (const el of this.elements.values()) {
+      this.scene.remove(el.group);
+      el.dispose();
+    }
+    this.elements.clear();
+    typeCounts["camera"] = typeCounts["light"] = typeCounts["cast_mark"] =
+      typeCounts["crew"] = typeCounts["equipment"] = 0;
+    // Persist the cleared state so VR and future loads also start blank
+    this.saveLocal();
+  }
+
   // ── localStorage persistence ───────────────────────────────────────────────
 
   saveLocal(): void {
