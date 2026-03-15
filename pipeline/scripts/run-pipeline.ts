@@ -19,9 +19,9 @@ function run(cmd: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, {
       stdio: "inherit",
-      shell: true,
       cwd: projectRoot,
     });
+    child.on("error", reject);
     child.on("exit", (code) =>
       code === 0 ? resolve() : reject(new Error(`Exit ${code}`))
     );

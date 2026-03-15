@@ -18,7 +18,6 @@
     "pipeline:expand": "tsx pipeline/scripts/expand-images.ts",
     "pipeline:output": "tsx pipeline/scripts/prepare-output.ts",
     "pipeline:generate": "tsx pipeline/scripts/generate-splat.ts",
-    "pipeline:run": "tsx pipeline/scripts/run-pipeline.ts",
     "pipeline:reference": "tsx pipeline/scripts/generate-reference.ts",
     "pipeline:full": "tsx pipeline/scripts/run-pipeline.ts"
   },

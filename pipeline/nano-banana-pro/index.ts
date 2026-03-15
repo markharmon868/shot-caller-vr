@@ -1,7 +1,7 @@
 /**
  * Nano Banana Pro — multi-angle reference image generation via Vertex AI.
  *
- * Uses Gemini 3 Pro Image Preview to generate clean, photorealistic
+ * Uses Gemini 2.0 Flash Preview (image generation) to generate clean, photorealistic
  * multi-angle reference images of a location for 3D reconstruction.
  *
  * Auth: gcloud Application Default Credentials (no API key needed).
@@ -36,30 +36,45 @@ const ANGLE_LABELS: { angle: string; azimuth: number; direction: string }[] = [
   { angle: "left", azimuth: 270, direction: "facing west, 270° clockwise from north" },
 ];
 
+function sanitizeLocation(input: string): string {
+  if (input.length > 200) throw new Error("Location name too long (max 200 chars)");
+  return input.replace(/[^\w\s,.\-'()&/]/g, "");
+}
+
 function buildPrompt(location: string, direction: string): string {
-  return `Clean, photorealistic photograph of ${location} from the ${direction}, no pedestrians, no vehicles, no text overlays, film location scouting reference, 16:9 aspect ratio, natural lighting, high detail`;
+  const safe = sanitizeLocation(location);
+  return `Clean, photorealistic photograph of ${safe} from the ${direction}, no pedestrians, no vehicles, no text overlays, film location scouting reference, 16:9 aspect ratio, natural lighting, high detail`;
 }
 
 /**
- * Generate multi-angle reference images of a location using Vertex AI Gemini 3 Pro Image Preview.
+ * Generate multi-angle reference images of a location using Vertex AI Gemini 2.0 Flash Preview.
  */
 export async function generateReferenceImages(
   options: NanoBananaProOptions
 ): Promise<NanoBananaProResult> {
-  const project = process.env.GOOGLE_CLOUD_PROJECT ?? "ary-pi-5";
+  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  if (!project) {
+    throw new Error("GOOGLE_CLOUD_PROJECT is required. Set it in .env.");
+  }
   const location = process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1";
 
   const vertexAI = new VertexAI({ project, location });
+
+  const VERTEX_MODEL = process.env.VERTEX_AI_MODEL ?? "gemini-2.0-flash-preview-image-generation";
+  // responseModalities is supported at runtime but not yet in the SDK type definitions
   const model = vertexAI.getGenerativeModel({
-    model: "gemini-2.0-flash-preview-image-generation",
+    model: VERTEX_MODEL,
     generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"] as unknown as undefined,
+      responseModalities: ["TEXT", "IMAGE"],
     } as Record<string, unknown>,
   });
 
   const numAngles = Math.min(options.numAngles ?? 4, ANGLE_LABELS.length);
   const angles = ANGLE_LABELS.slice(0, numAngles);
   const images: AngleImage[] = [];
+
+  // Pre-compute base64 once (avoids re-encoding per iteration)
+  const referenceBase64 = options.referenceImage?.toString("base64");
 
   for (const { angle, azimuth, direction } of angles) {
     console.log(`  Generating ${angle} view (${azimuth}°)...`);
@@ -71,11 +86,11 @@ export async function generateReferenceImages(
     ];
 
     // If reference image provided, include it for grounding
-    if (options.referenceImage) {
+    if (referenceBase64) {
       parts.unshift({
         inlineData: {
           mimeType: "image/jpeg",
-          data: options.referenceImage.toString("base64"),
+          data: referenceBase64,
         },
       });
       parts.push({

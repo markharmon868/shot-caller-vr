@@ -23,6 +23,12 @@ function listImages(dir: string): string[] {
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
 
+  // Clear stale files from previous runs
+  const existing = fs.readdirSync(outputDir);
+  for (const f of existing) {
+    if (f !== ".gitkeep") fs.unlinkSync(path.join(outputDir, f));
+  }
+
   // Priority: generated (Nano Banana Pro) > expanded (Nano Banana 2) > raw (Street View)
   const generated = listImages(generatedDir);
   const expanded = listImages(expandedDir);

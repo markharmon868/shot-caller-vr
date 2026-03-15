@@ -29,8 +29,6 @@ export interface WorldModelOptions {
   imagePaths?: string[];
   /** Model tier: mini (~30s, 250 credits) or plus (~5min, 1600 credits). */
   model?: "mini" | "plus";
-  /** Whether input is a panorama. */
-  isPano?: boolean;
 }
 
 export interface WorldModelResult {
@@ -55,6 +53,21 @@ function marbleHeaders(): Record<string, string> {
     "WLT-Api-Key": getApiKey(),
     "Content-Type": "application/json",
   };
+}
+
+/** Trusted hosts for upload/download URLs returned by the Marble API. */
+const TRUSTED_UPLOAD_HOSTS = ["storage.googleapis.com", "storage.cloud.google.com"];
+const TRUSTED_CDN_HOSTS = [...TRUSTED_UPLOAD_HOSTS, "cdn.worldlabs.ai"];
+const ALLOWED_UPLOAD_METHODS = new Set(["PUT", "POST"]);
+
+function assertTrustedUrl(url: string, label: string, trustedHosts: string[]): void {
+  const parsed = new URL(url);
+  const isTrusted = trustedHosts.some(
+    (h) => parsed.hostname === h || parsed.hostname.endsWith("." + h)
+  );
+  if (!isTrusted) {
+    throw new Error(`${label} points to untrusted host: ${parsed.hostname}`);
+  }
 }
 
 /**
@@ -94,10 +107,17 @@ async function uploadImage(imagePath: string): Promise<string> {
 
   const uploadUrl = prepData.upload_info.upload_url;
   const mediaAssetId = prepData.media_asset.media_asset_id;
+  const uploadMethod = prepData.upload_info.upload_method ?? "PUT";
+
+  // Validate the upload URL targets a trusted host
+  assertTrustedUrl(uploadUrl, "upload_url", TRUSTED_UPLOAD_HOSTS);
+  if (!ALLOWED_UPLOAD_METHODS.has(uploadMethod.toUpperCase())) {
+    throw new Error(`Unexpected upload method: ${uploadMethod}`);
+  }
 
   // Step 2: Upload raw image bytes to signed GCS URL
   const uploadRes = await fetch(uploadUrl, {
-    method: prepData.upload_info.upload_method ?? "PUT",
+    method: uploadMethod,
     headers: {
       "Content-Type": mimeType,
       ...prepData.upload_info.required_headers,
@@ -145,8 +165,12 @@ async function generateMultiImage(
     throw new Error(`Marble worlds:generate failed (${res.status}): ${text}`);
   }
 
-  const data = (await res.json()) as { operation_id: string };
-  return data.operation_id;
+  const data = (await res.json()) as Record<string, unknown>;
+  const opId = data.operation_id as string | undefined;
+  if (!opId) {
+    throw new Error(`Unexpected worlds:generate response (no operation_id): ${JSON.stringify(data).slice(0, 500)}`);
+  }
+  return opId;
 }
 
 /**
@@ -178,8 +202,12 @@ async function generateSingleImage(
     throw new Error(`Marble worlds:generate failed (${res.status}): ${text}`);
   }
 
-  const data = (await res.json()) as { operation_id: string };
-  return data.operation_id;
+  const data = (await res.json()) as Record<string, unknown>;
+  const opId = data.operation_id as string | undefined;
+  if (!opId) {
+    throw new Error(`Unexpected worlds:generate response (no operation_id): ${JSON.stringify(data).slice(0, 500)}`);
+  }
+  return opId;
 }
 
 interface OperationResult {
@@ -190,12 +218,19 @@ interface OperationResult {
 
 /**
  * Poll operation until done, printing elapsed time.
+ * @param maxWaitMs Maximum time to wait before timing out (default: 10 minutes)
  */
-async function pollOperation(operationId: string): Promise<string> {
+async function pollOperation(operationId: string, maxWaitMs = 600_000): Promise<string> {
   const startTime = Date.now();
   const pollInterval = 15_000; // 15 seconds
 
   while (true) {
+    if (Date.now() - startTime > maxWaitMs) {
+      throw new Error(
+        `Marble operation ${operationId} timed out after ${(maxWaitMs / 1000).toFixed(0)}s`
+      );
+    }
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
     console.log(`  Generating world... (elapsed: ${elapsed}s)`);
 
@@ -218,10 +253,6 @@ async function pollOperation(operationId: string): Promise<string> {
       const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       console.log(`  World generated in ${totalElapsed}s (world_id: ${op.metadata.world_id})`);
       return op.metadata.world_id;
-    }
-
-    if (op.metadata?.world_id) {
-      // world_id available during polling
     }
 
     await new Promise((r) => setTimeout(r, pollInterval));
@@ -256,7 +287,8 @@ async function downloadSplat(worldId: string, outputPath: string): Promise<void>
     throw new Error("No .spz URL found in world assets");
   }
 
-  // CDN download — no auth needed
+  // Validate CDN URL targets a trusted host
+  assertTrustedUrl(spzUrl, "spz_url", TRUSTED_CDN_HOSTS);
   console.log(`  Downloading .spz from CDN...`);
   const dlRes = await fetch(spzUrl);
   if (!dlRes.ok) {
@@ -289,81 +321,95 @@ export async function generateWorldModel(
 
   const modelName =
     options.model === "plus" ? "Marble 0.1-plus" : "Marble 0.1-mini";
+  const maxWaitMs = options.model === "plus" ? 1_800_000 : 600_000;
 
-  // Single-image mode
-  if (options.imagePath) {
-    if (!fs.existsSync(options.imagePath)) {
-      return { success: false, error: `Image not found: ${options.imagePath}` };
+  try {
+    // Single-image mode
+    if (options.imagePath) {
+      if (!fs.existsSync(options.imagePath)) {
+        return { success: false, error: `Image not found: ${options.imagePath}` };
+      }
+
+      console.log(`Uploading image: ${options.imagePath}`);
+      const assetId = await uploadImage(options.imagePath);
+      console.log(`  Uploaded (asset: ${assetId})`);
+
+      console.log(`Generating world (${modelName}, single-image)...`);
+      const opId = await generateSingleImage(assetId, modelName);
+      const worldId = await pollOperation(opId, maxWaitMs);
+      await downloadSplat(worldId, outputPath);
+
+      return { success: true, splatPath: outputPath, worldId };
     }
 
-    console.log(`Uploading image: ${options.imagePath}`);
-    const assetId = await uploadImage(options.imagePath);
-    console.log(`  Uploaded (asset: ${assetId})`);
+    // Multi-image mode
+    const azimuths = [0, 90, 180, 270];
+    let imagesToUpload: { path: string; azimuth: number }[] = [];
 
-    console.log(`Generating world (${modelName}, single-image)...`);
-    const opId = await generateSingleImage(assetId, modelName);
-    const worldId = await pollOperation(opId);
+    if (options.imagePaths && options.imagePaths.length > 0) {
+      if (options.imagePaths.length > azimuths.length) {
+        return {
+          success: false,
+          error: `Max ${azimuths.length} images supported for multi-image mode`,
+        };
+      }
+      imagesToUpload = options.imagePaths.map((p, i) => ({
+        path: p,
+        azimuth: azimuths[i],
+      }));
+    } else {
+      // Read from inputDir
+      if (!fs.existsSync(inputDir)) {
+        return { success: false, error: `Input dir not found: ${inputDir}` };
+      }
+
+      const images = fs
+        .readdirSync(inputDir)
+        .filter((f) => /\.(jpg|jpeg|png|webp)$/i.test(f))
+        .sort()
+        .slice(0, azimuths.length);
+
+      if (images.length === 0) {
+        return {
+          success: false,
+          error: "No images in input directory. Run pipeline first.",
+        };
+      }
+
+      imagesToUpload = images.map((f, i) => ({
+        path: path.join(inputDir, f),
+        azimuth: azimuths[i],
+      }));
+    }
+
+    // Upload all images in parallel
+    console.log(`Uploading ${imagesToUpload.length} image(s)...`);
+    const mediaAssets = await Promise.all(
+      imagesToUpload.map(async (img) => {
+        console.log(`  Uploading: ${path.basename(img.path)} (${img.azimuth}°)`);
+        const id = await uploadImage(img.path);
+        return { id, azimuth: img.azimuth };
+      })
+    );
+
+    // Generate world
+    const isMulti = mediaAssets.length > 1;
+    console.log(
+      `Generating world (${modelName}, ${isMulti ? "multi-image" : "single-image"})...`
+    );
+
+    const opId = isMulti
+      ? await generateMultiImage(mediaAssets, modelName)
+      : await generateSingleImage(mediaAssets[0].id, modelName);
+
+    const worldId = await pollOperation(opId, maxWaitMs);
     await downloadSplat(worldId, outputPath);
 
     return { success: true, splatPath: outputPath, worldId };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
-
-  // Multi-image mode
-  const azimuths = [0, 90, 180, 270];
-  let imagesToUpload: { path: string; azimuth: number }[] = [];
-
-  if (options.imagePaths && options.imagePaths.length > 0) {
-    // Explicit paths provided — map to azimuths in order
-    imagesToUpload = options.imagePaths.map((p, i) => ({
-      path: p,
-      azimuth: azimuths[i % azimuths.length],
-    }));
-  } else {
-    // Read from inputDir
-    if (!fs.existsSync(inputDir)) {
-      return { success: false, error: `Input dir not found: ${inputDir}` };
-    }
-
-    const images = fs
-      .readdirSync(inputDir)
-      .filter((f) => /\.(jpg|jpeg|png|webp)$/i.test(f))
-      .sort();
-
-    if (images.length === 0) {
-      return {
-        success: false,
-        error: "No images in input directory. Run pipeline first.",
-      };
-    }
-
-    imagesToUpload = images.map((f, i) => ({
-      path: path.join(inputDir, f),
-      azimuth: azimuths[i % azimuths.length],
-    }));
-  }
-
-  // Upload all images
-  console.log(`Uploading ${imagesToUpload.length} image(s)...`);
-  const mediaAssets: { id: string; azimuth: number }[] = [];
-
-  for (const img of imagesToUpload) {
-    console.log(`  Uploading: ${path.basename(img.path)} (${img.azimuth}°)`);
-    const assetId = await uploadImage(img.path);
-    mediaAssets.push({ id: assetId, azimuth: img.azimuth });
-  }
-
-  // Generate world
-  const isMulti = mediaAssets.length > 1;
-  console.log(
-    `Generating world (${modelName}, ${isMulti ? "multi-image" : "single-image"})...`
-  );
-
-  const opId = isMulti
-    ? await generateMultiImage(mediaAssets, modelName)
-    : await generateSingleImage(mediaAssets[0].id, modelName);
-
-  const worldId = await pollOperation(opId);
-  await downloadSplat(worldId, outputPath);
-
-  return { success: true, splatPath: outputPath, worldId };
 }
