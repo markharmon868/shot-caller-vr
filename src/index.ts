@@ -24,6 +24,12 @@ async function start(): Promise<void> {
     const { startScout, onGenerateClick } = await import("./scout/ScoutApp.js");
     (window as unknown as Record<string, unknown>).__scoutGenerate = onGenerateClick;
     startScout();
+
+    // Mount CopilotKit Scout Agent AG-UI panel
+    const { mountScoutAgent } = await import("./agui/mountScoutAgent.js");
+    const { injectScoutAgentTheme } = await import("./agui/theme.js");
+    injectScoutAgentTheme();
+    mountScoutAgent();
     return;
   }
 
@@ -43,6 +49,17 @@ async function start(): Promise<void> {
     renderEditorShell();
     const { startEditor } = await import("./editor/EditorApp.js");
     startEditor();
+
+    // Mount CopilotKit Scout Agent AG-UI panel
+    const { mountScoutAgent } = await import("./agui/mountScoutAgent.js");
+    const { injectScoutAgentTheme } = await import("./agui/theme.js");
+    injectScoutAgentTheme();
+
+    const params = new URLSearchParams(window.location.search);
+    mountScoutAgent({
+      sceneName: params.get("scene") ?? "Untitled Scene",
+      splatUrl: params.get("splat") ?? undefined,
+    });
     return;
   }
 
