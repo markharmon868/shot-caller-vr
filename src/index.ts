@@ -1,4 +1,5 @@
-import "./app.css";
+import "./styles/index.css";
+import "./app.css"; // Legacy shell styles - to be migrated
 
 import { resolveAppMode } from "./routing.js";
 import {
