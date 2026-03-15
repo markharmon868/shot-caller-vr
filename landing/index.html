@@ -8,25 +8,20 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans+Condensed:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #080808;
-      --bg-surface:   #101010;
-      --bg-card:      #141414;
-      --border:       rgba(255,255,255,0.07);
-      --border-light: rgba(255,255,255,0.12);
-      --accent:       #e8a020;
-      --accent-dim:   rgba(232,160,32,0.15);
-      --text-1:       #f0f0f0;
-      --text-2:       #888;
-      --text-3:       #444;
-      --font-serif:   'DM Serif Display', serif;
-      --font-mono:    'IBM Plex Mono', monospace;
-      --font-cond:    'IBM Plex Sans Condensed', sans-serif;
+      --bg: #000;
+      --text-1: #fff;
+      --text-2: #86868b;
+      --text-3: #424245;
+      --accent: #e8a020;
+      --border: rgba(255,255,255,0.1);
+      --font-serif: 'DM Serif Display', serif;
+      --font-sans: 'IBM Plex Sans Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     html { scroll-behavior: smooth; }
@@ -34,48 +29,52 @@
     body {
       background: var(--bg);
       color: var(--text-1);
-      font-family: var(--font-cond);
+      font-family: var(--font-sans);
       overflow-x: hidden;
-      position: relative;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Film grain overlay */
+    /* Subtle film grain */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.015;
       pointer-events: none;
-      z-index: 9998;
+      z-index: 9999;
     }
 
-    /* ─── NAVIGATION ─── */
+    /* ─── NAV ─── */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
-      height: 52px;
+      height: 44px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
+      justify-content: center;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: saturate(180%) blur(20px);
       border-bottom: 1px solid var(--border);
-      background: rgba(8,8,8,0.85);
-      backdrop-filter: blur(12px);
       z-index: 100;
     }
 
-    .nav-logo {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      color: var(--text-1);
-      text-decoration: none;
+    .nav-inner {
+      width: 100%;
+      max-width: 980px;
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    .nav-logo span {
-      color: var(--accent);
+    .nav-logo {
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-1);
+      text-decoration: none;
     }
 
     .nav-links {
@@ -85,561 +84,200 @@
     }
 
     .nav-links a {
-      font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-2);
       text-decoration: none;
-      letter-spacing: 0.1em;
       transition: color 0.2s;
     }
 
     .nav-links a:hover { color: var(--text-1); }
 
-    .nav-cta {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 7px 16px;
-      border: 1px solid var(--border-light);
-      border-radius: 4px;
-      color: var(--text-1);
-      text-decoration: none;
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .nav-cta:hover {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-    }
-
     /* ─── HERO ─── */
-    #hero {
-      min-height: 100vh;
+    .hero {
+      min-height: 692px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 120px 24px 80px;
-      position: relative;
-      overflow: hidden;
+      padding: 100px 20px 60px;
     }
 
-    /* Animated background grid — Linear-style */
-    #hero::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 80px 80px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
-      animation: gridDrift 20s linear infinite;
+    .hero-content {
+      max-width: 700px;
     }
 
-    @keyframes gridDrift {
-      from { transform: translateY(0); }
-      to   { transform: translateY(80px); }
-    }
-
-    /* Radial amber glow */
-    .hero-glow {
-      position: absolute;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 600px;
-      height: 300px;
-      background: radial-gradient(ellipse, rgba(232,160,32,0.08) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.25em;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin-bottom: 28px;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.8s ease forwards 0.2s;
-    }
-
-    .hero-label::before,
-    .hero-label::after {
-      content: "—";
-      margin: 0 12px;
-      color: var(--text-3);
-    }
-
-    h1 {
+    .hero h1 {
       font-family: var(--font-serif);
-      font-size: clamp(40px, 6vw, 88px);
+      font-size: clamp(48px, 6vw, 80px);
       font-weight: 400;
       line-height: 1.05;
-      letter-spacing: -0.02em;
-      max-width: 800px;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.8s ease forwards 0.4s;
+      letter-spacing: -0.015em;
+      margin-bottom: 20px;
     }
 
-    h1 em {
-      font-style: italic;
-      color: var(--accent);
-    }
-
-    .hero-sub {
-      font-family: var(--font-cond);
-      font-size: clamp(15px, 1.5vw, 19px);
+    .hero p {
+      font-size: clamp(21px, 2.5vw, 28px);
+      font-weight: 300;
       color: var(--text-2);
-      max-width: 480px;
-      line-height: 1.6;
-      margin-top: 24px;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.8s ease forwards 0.6s;
+      line-height: 1.4;
+      margin-bottom: 32px;
     }
 
-    .hero-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 40px;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.8s ease forwards 0.8s;
-    }
-
-    .btn-launch {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 500;
-      padding: 12px 28px;
+    .hero-cta {
+      display: inline-block;
+      font-size: 17px;
+      font-weight: 400;
+      padding: 12px 22px;
       background: var(--accent);
       color: #000;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
       text-decoration: none;
-      letter-spacing: 0.05em;
-      transition: opacity 0.2s, transform 0.2s;
+      border-radius: 980px;
+      transition: opacity 0.2s;
     }
 
-    .btn-launch:hover { opacity: 0.88; transform: translateY(-1px); }
+    .hero-cta:hover { opacity: 0.85; }
 
-    .btn-ghost-hero {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      padding: 12px 28px;
-      background: transparent;
-      color: var(--text-2);
-      border: 1px solid var(--border-light);
-      border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    .btn-ghost-hero:hover { border-color: var(--text-2); color: var(--text-1); }
-
-    /* Aspect ratio indicator — film camera reference */
-    .hero-ratio {
-      position: absolute;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-3);
-      letter-spacing: 0.15em;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .hero-ratio::before,
-    .hero-ratio::after {
-      content: "";
-      display: block;
-      width: 40px;
-      height: 1px;
-      background: var(--border-light);
-    }
-
-    /* Scroll-fade canvas bar */
-    .hero-viewport-bar {
-      position: absolute;
-      bottom: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(900px, 90vw);
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--border-light), transparent);
-      z-index: 1;
-    }
-
-    /* ─── CONCEPT ─── */
-    #concept {
-      padding: 120px 32px;
-      max-width: 1100px;
+    /* ─── SECTION ─── */
+    section {
+      max-width: 980px;
       margin: 0 auto;
+      padding: 80px 22px;
     }
 
-    .section-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.2em;
+    .section-title {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
       color: var(--accent);
       text-transform: uppercase;
-      margin-bottom: 48px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .section-label::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .concept-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .concept-item {
-      background: var(--bg-card);
-      padding: 40px 32px;
-      transition: background 0.2s;
-    }
-
-    .concept-item:hover { background: var(--bg-surface); }
-
-    .concept-num {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--accent);
-      margin-bottom: 20px;
-      display: block;
-    }
-
-    .concept-item h3 {
-      font-family: var(--font-serif);
-      font-size: 22px;
-      font-weight: 400;
-      line-height: 1.2;
       margin-bottom: 16px;
     }
 
-    .concept-item p {
-      font-size: 14px;
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+
+    .lead {
+      font-size: 21px;
+      font-weight: 300;
       color: var(--text-2);
-      line-height: 1.7;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+
+    /* ─── CONCEPT GRID ─── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+      margin-top: 64px;
+    }
+
+    .concept-item h3 {
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .concept-item p {
+      font-size: 17px;
+      color: var(--text-2);
+      line-height: 1.5;
     }
 
     /* ─── PIPELINE ─── */
-    #pipeline {
-      padding: 120px 32px;
+    .pipeline {
+      background: #0a0a0a;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      background: var(--bg-surface);
-      overflow: hidden;
-    }
-
-    .pipeline-inner {
-      max-width: 1100px;
-      margin: 0 auto;
     }
 
     .pipeline-steps {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      margin-top: 60px;
-      position: relative;
-    }
-
-    /* Connecting line */
-    .pipeline-steps::before {
-      content: "";
-      position: absolute;
-      top: 28px;
-      left: 12.5%;
-      right: 12.5%;
-      height: 1px;
-      background: linear-gradient(90deg, var(--accent), var(--text-3));
+      gap: 40px;
+      margin-top: 64px;
     }
 
     .pipeline-step {
-      padding: 0 24px;
       text-align: center;
     }
 
-    .step-node {
-      width: 56px;
-      height: 56px;
-      border: 1px solid var(--border-light);
-      border-radius: 50%;
-      margin: 0 auto 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      background: var(--bg-card);
-      position: relative;
-      z-index: 1;
-      transition: border-color 0.3s, background 0.3s;
+    .step-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      display: block;
     }
 
-    .pipeline-step:hover .step-node {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-    }
-
-    .step-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      color: var(--accent);
-      text-transform: uppercase;
+    .step-title {
+      font-size: 17px;
+      font-weight: 500;
       margin-bottom: 8px;
     }
 
     .step-desc {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-2);
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     /* ─── FEATURES ─── */
-    #features {
-      padding: 120px 32px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    .feature-grid {
+    .features-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 60px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 64px 80px;
+      margin-top: 64px;
     }
 
-    .feature-item {
-      background: var(--bg-card);
-      padding: 32px;
-      transition: background 0.2s;
-    }
-
-    .feature-item:hover { background: var(--bg-surface); }
-
-    .feature-icon {
+    .feature h3 {
       font-size: 24px;
-      margin-bottom: 16px;
-      display: block;
+      font-weight: 500;
+      margin-bottom: 12px;
     }
 
-    .feature-item h4 {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      color: var(--text-1);
-      margin-bottom: 10px;
-      text-transform: uppercase;
-    }
-
-    .feature-item p {
-      font-size: 13px;
+    .feature p {
+      font-size: 17px;
       color: var(--text-2);
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
-    /* ─── SHOT DEMO ─── */
-    #demo {
-      padding: 120px 32px;
-      border-top: 1px solid var(--border);
-      background: var(--bg-surface);
-    }
-
-    .demo-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: center;
-    }
-
-    .demo-copy h2 {
-      font-family: var(--font-serif);
-      font-size: clamp(28px, 3vw, 44px);
-      font-weight: 400;
-      line-height: 1.15;
-      margin-bottom: 20px;
-    }
-
-    .demo-copy p {
-      font-size: 15px;
-      color: var(--text-2);
-      line-height: 1.7;
-      margin-bottom: 32px;
-    }
-
-    /* Mock PDF shot list */
-    .shot-list-mock {
-      background: #0d0d0d;
-      border: 1px solid var(--border-light);
-      border-radius: 6px;
-      overflow: hidden;
-      font-family: var(--font-mono);
-    }
-
-    .mock-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .mock-title {
-      font-size: 12px;
-      color: var(--accent);
-      letter-spacing: 0.1em;
-    }
-
-    .mock-date {
-      font-size: 10px;
-      color: var(--text-3);
-    }
-
-    .mock-cols {
-      display: grid;
-      grid-template-columns: 36px 1fr 80px 80px;
-      gap: 0;
-      padding: 8px 20px;
-      font-size: 9px;
-      color: var(--text-3);
-      letter-spacing: 0.1em;
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-    }
-
-    .mock-row {
-      display: grid;
-      grid-template-columns: 36px 1fr 80px 80px;
-      gap: 0;
-      padding: 12px 20px;
-      font-size: 11px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-    }
-
-    .mock-row:hover { background: rgba(255,255,255,0.02); }
-
-    .mock-row:last-child { border-bottom: none; }
-
-    .mock-shot-num { color: var(--accent); }
-    .mock-label    { color: var(--text-1); }
-    .mock-lens     { color: var(--text-2); }
-    .mock-move     { color: var(--text-3); }
-
-    /* ─── CTA ─── */
-    #cta {
-      padding: 160px 32px;
+    /* ─── CTA SECTION ─── */
+    .cta-section {
       text-align: center;
-      position: relative;
-      overflow: hidden;
+      padding: 120px 22px;
     }
 
-    #cta::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(232,160,32,0.06) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    #cta h2 {
-      font-family: var(--font-serif);
-      font-size: clamp(32px, 4vw, 56px);
-      font-weight: 400;
-      line-height: 1.1;
-      position: relative;
-      z-index: 1;
-      margin-bottom: 24px;
-    }
-
-    #cta p {
-      font-size: 15px;
-      color: var(--text-2);
-      margin-bottom: 40px;
-      position: relative;
-      z-index: 1;
+    .cta-section h2 {
+      margin-bottom: 32px;
     }
 
     /* ─── FOOTER ─── */
     footer {
       border-top: 1px solid var(--border);
-      padding: 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 20px 22px;
+      text-align: center;
     }
 
-    footer span {
-      font-family: var(--font-mono);
-      font-size: 10px;
+    footer p {
+      font-size: 12px;
       color: var(--text-3);
-      letter-spacing: 0.1em;
-    }
-
-    /* ─── ANIMATIONS ─── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Scroll-reveal */
-    .reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
-    }
-
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
     }
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 900px) {
       .concept-grid,
-      .feature-grid { grid-template-columns: 1fr; }
-      .pipeline-steps { grid-template-columns: repeat(2, 1fr); }
-      .pipeline-steps::before { display: none; }
-      .demo-inner { grid-template-columns: 1fr; }
+      .pipeline-steps,
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
       .nav-links { display: none; }
     }
   </style>
@@ -648,197 +286,111 @@
 
   <!-- NAV -->
   <nav>
-    <a href="/" class="nav-logo">SHOT<span>.</span>CALLER</a>
-    <ul class="nav-links">
-      <li><a href="#pipeline">Pipeline</a></li>
-      <li><a href="#features">Features</a></li>
-      <li><a href="#demo">Shot List</a></li>
-    </ul>
-    <a href="../" class="nav-cta">Open Editor →</a>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">Shot Caller</a>
+      <ul class="nav-links">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#features">Features</a></li>
+      </ul>
+      <a href="../" class="hero-cta" style="font-size: 12px; padding: 8px 16px;">Open Editor</a>
+    </div>
   </nav>
 
   <!-- HERO -->
-  <section id="hero">
-    <div class="hero-glow"></div>
-
-    <p class="hero-label">SensAI Hack 2026 — Worlds in Action</p>
-
-    <h1>
-      Block your scene.<br />
-      <em>Walk it before you shoot it.</em>
-    </h1>
-
-    <p class="hero-sub">
-      Turn any real location into a spatial pre-vis environment.
-      Place cameras, plan your sequence, then step inside in VR.
-    </p>
-
-    <div class="hero-actions">
-      <a href="../" class="btn-launch">Open Editor</a>
-      <a href="#pipeline" class="btn-ghost-hero">How it works</a>
+  <div class="hero">
+    <div class="hero-content">
+      <h1>Block your scene.<br />Walk it in VR.</h1>
+      <p>Transform any real location into a 3D pre-visualization environment. Place cameras, plan sequences, then step inside.</p>
+      <a href="../" class="hero-cta">Get Started</a>
     </div>
-
-    <div class="hero-viewport-bar"></div>
-    <div class="hero-ratio">2.39 : 1</div>
-  </section>
+  </div>
 
   <!-- CONCEPT -->
-  <section id="concept">
-    <div class="section-label">The Idea</div>
-    <div class="concept-grid reveal">
+  <section id="how">
+    <div class="section-title">How It Works</div>
+    <h2>Scout. Block. Preview.</h2>
+    <p class="lead">Three steps from location scouting to immersive walkthrough.</p>
+
+    <div class="concept-grid">
       <div class="concept-item">
-        <span class="concept-num">01</span>
-        <h3>Scout any location on Earth.</h3>
-        <p>Pull real Street View imagery, enhance it with Nano Banana AI, and convert it into a photorealistic 3D Gaussian splat — from your laptop, before you book travel.</p>
+        <h3>Scout any location</h3>
+        <p>Pull real Street View imagery and enhance it with AI. Convert it into a photorealistic 3D environment — all from your browser.</p>
       </div>
       <div class="concept-item">
-        <span class="concept-num">02</span>
-        <h3>Block in spatial 3D.</h3>
-        <p>Place cameras, lights, cast marks, crew positions, and props in true three-dimensional space. Assign shot numbers and plan your sequence the way you actually think — spatially.</p>
+        <h3>Block in 3D</h3>
+        <p>Place cameras, lights, cast marks, and crew positions in true spatial 3D. Build your shot sequence the way you think.</p>
       </div>
       <div class="concept-item">
-        <span class="concept-num">03</span>
-        <h3>Walk it before you shoot it.</h3>
-        <p>Step into the scene in WebXR. Walk the blocking. Orient your crew. Export your shot list as a PDF for the AD. Arrive on location knowing exactly what you're making.</p>
+        <h3>Walk your scene</h3>
+        <p>Step into WebXR. Walk the blocking. Orient your crew. Export your shot list. Arrive on set knowing what you're making.</p>
       </div>
     </div>
   </section>
 
   <!-- PIPELINE -->
-  <section id="pipeline">
-    <div class="pipeline-inner">
-      <div class="section-label">The Pipeline</div>
-      <div class="pipeline-steps reveal">
-        <div class="pipeline-step">
-          <div class="step-node">🌍</div>
-          <div class="step-label">Street View</div>
-          <div class="step-desc">Real-world location imagery pulled via Google Maps API</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="step-node">🍌</div>
-          <div class="step-label">Nano Banana</div>
-          <div class="step-desc">Gemini AI enhances imagery — cinematic clarity, lifted shadows, sharpened geometry</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="step-node">✦</div>
-          <div class="step-label">World Model</div>
-          <div class="step-desc">Enhanced frames converted to a Gaussian splat — dense, photorealistic 3D scene</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="step-node">🎬</div>
-          <div class="step-label">Shot Caller</div>
-          <div class="step-desc">Block shots in the editor, walk the scene in VR, export the shot list</div>
-        </div>
+  <section class="pipeline">
+    <div class="section-title">The Pipeline</div>
+    <h2>From street to screen</h2>
+
+    <div class="pipeline-steps">
+      <div class="pipeline-step">
+        <span class="step-icon">🌍</span>
+        <div class="step-title">Street View</div>
+        <p class="step-desc">Real-world imagery via Google Maps</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-icon">✨</span>
+        <div class="step-title">AI Enhancement</div>
+        <p class="step-desc">Gemini sharpens, grades, recovers detail</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-icon">🎯</span>
+        <div class="step-title">3D Scene</div>
+        <p class="step-desc">Gaussian splat conversion</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-icon">🎬</span>
+        <div class="step-title">Shot Caller</div>
+        <p class="step-desc">Block, sequence, export</p>
       </div>
     </div>
   </section>
 
   <!-- FEATURES -->
   <section id="features">
-    <div class="section-label">Features</div>
-    <div class="feature-grid reveal">
-      <div class="feature-item">
-        <span class="feature-icon">📷</span>
-        <h4>Camera Blocking</h4>
-        <p>Place cameras with lens, movement, and intention annotations. Sequence them in shooting order with a single click.</p>
+    <div class="section-title">Features</div>
+    <h2>Professional tools for filmmakers</h2>
+
+    <div class="features-grid">
+      <div class="feature">
+        <h3>Camera Blocking</h3>
+        <p>Place cameras with lens and movement annotations. Sequence shots with a single click. Export as PDF for your crew.</p>
       </div>
-      <div class="feature-item">
-        <span class="feature-icon">🌐</span>
-        <h4>Gaussian Splat Scenes</h4>
-        <p>Industry-leading .spz rendering via SparkJS. Level-of-detail for smooth performance on Quest and PICO.</p>
-      </div>
-      <div class="feature-item">
-        <span class="feature-icon">🥽</span>
-        <h4>WebXR Preview</h4>
+      <div class="feature">
+        <h3>WebXR Preview</h3>
         <p>Walk your blocked scene in immersive VR. No app install. Works in the browser on any WebXR headset.</p>
       </div>
-      <div class="feature-item">
-        <span class="feature-icon">🍌</span>
-        <h4>Nano Banana Enhancement</h4>
-        <p>Gemini 2.0 Flash Image transforms raw Street View into cinematic-quality source material for your splats.</p>
+      <div class="feature">
+        <h3>Gaussian Splats</h3>
+        <p>Industry-leading .spz rendering via SparkJS. Photorealistic environments with smooth performance on Quest.</p>
       </div>
-      <div class="feature-item">
-        <span class="feature-icon">📄</span>
-        <h4>Shot List PDF Export</h4>
-        <p>One-click export of your complete shot list — formatted for ADs, DPs, and gaffers. Print and take to set.</p>
-      </div>
-      <div class="feature-item">
-        <span class="feature-icon">🔗</span>
-        <h4>Scene Sharing</h4>
-        <p>Encode your entire scene as a URL. Share with your crew — they load the exact same blocking on any device.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SHOT DEMO -->
-  <section id="demo">
-    <div class="demo-inner">
-      <div class="demo-copy reveal">
-        <div class="section-label">The Artifact</div>
-        <h2>Your crew gets a shot list they can actually use.</h2>
-        <p>Every camera you place becomes a row in a production-ready PDF. Lens choice, movement, director's notes — formatted the way ADs expect it.</p>
-        <a href="../" class="btn-launch">Start Blocking →</a>
-      </div>
-      <div class="shot-list-mock reveal">
-        <div class="mock-header">
-          <span class="mock-title">SHOT CALLER / SCENE 14</span>
-          <span class="mock-date">March 15, 2026</span>
-        </div>
-        <div class="mock-cols">
-          <span>#</span><span>Label</span><span>Lens</span><span>Movement</span>
-        </div>
-        <div class="mock-row">
-          <span class="mock-shot-num">01</span>
-          <span class="mock-label">Camera A — Establish</span>
-          <span class="mock-lens">24mm</span>
-          <span class="mock-move">Static</span>
-        </div>
-        <div class="mock-row">
-          <span class="mock-shot-num">02</span>
-          <span class="mock-label">Camera B — Over shoulder</span>
-          <span class="mock-lens">85mm</span>
-          <span class="mock-move">Dolly in</span>
-        </div>
-        <div class="mock-row">
-          <span class="mock-shot-num">03</span>
-          <span class="mock-label">Camera C — Reaction</span>
-          <span class="mock-lens">50mm</span>
-          <span class="mock-move">Handheld</span>
-        </div>
-        <div class="mock-row">
-          <span class="mock-shot-num">04</span>
-          <span class="mock-label">Camera D — Wide pull</span>
-          <span class="mock-lens">18mm</span>
-          <span class="mock-move">Crane up</span>
-        </div>
+      <div class="feature">
+        <h3>Scene Sharing</h3>
+        <p>Encode your scene as a URL. Share with your crew — they load the exact same blocking on any device.</p>
       </div>
     </div>
   </section>
 
   <!-- CTA -->
-  <section id="cta">
-    <h2>Your next scene<br />starts here.</h2>
-    <p>No install. No login. Just open and block.</p>
-    <a href="../" class="btn-launch">Open Shot Caller →</a>
+  <section class="cta-section">
+    <h2>Start blocking your next scene.</h2>
+    <a href="../" class="hero-cta">Open Shot Caller</a>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <span>SHOT CALLER — SENSAI HACK 2026</span>
-    <span>WORLDS IN ACTION</span>
+    <p>Shot Caller — SensAI Hack 2026</p>
   </footer>
 
-  <script>
-    // Scroll reveal
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
-  </script>
 </body>
 </html>
