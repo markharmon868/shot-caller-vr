@@ -140,38 +140,50 @@ export function renderEditorShell(): void {
         <div class="panel-section">
           <div class="section-label">Elements</div>
           <div class="element-grid">
-            <button class="element-btn active" data-tool="select">
+            <button class="element-btn tool-btn active" data-tool="select">
               <span class="element-icon">↖</span>
               <span class="element-name">SELECT</span>
             </button>
-            <button class="element-btn" data-tool="camera">
+            <button class="element-btn tool-btn" data-tool="camera">
               <span class="element-icon">🎥</span>
               <span class="element-name">CAMERA</span>
             </button>
-            <button class="element-btn" data-tool="light">
+            <button class="element-btn tool-btn" data-tool="light">
               <span class="element-icon">💡</span>
               <span class="element-name">LIGHT</span>
             </button>
-            <button class="element-btn" data-tool="cast_mark">
+            <button class="element-btn tool-btn" data-tool="cast_mark">
               <span class="element-icon">✕</span>
               <span class="element-name">ACTOR</span>
             </button>
-            <button class="element-btn" data-tool="crew">
+            <button class="element-btn tool-btn" data-tool="crew">
               <span class="element-icon">🚶</span>
               <span class="element-name">CREW</span>
             </button>
-            <button class="element-btn" data-tool="equipment">
+            <button class="element-btn tool-btn" data-tool="equipment">
               <span class="element-icon">🎬</span>
               <span class="element-name">EQUIP</span>
             </button>
-            <button class="element-btn" data-tool="props">
+            <button class="element-btn tool-btn" data-tool="props">
               <span class="element-icon">📦</span>
               <span class="element-name">PROPS</span>
             </button>
-            <button class="element-btn" data-tool="gltf">
+            <button class="element-btn tool-btn" data-tool="gltf">
               <span class="element-icon">📐</span>
               <span class="element-name">MODEL</span>
             </button>
+          </div>
+        </div>
+
+        <!-- 3D Models -->
+        <div class="panel-section">
+          <div class="section-label">3D Models</div>
+          <select id="gltf-model-select" style="width: 100%; padding: 6px 8px; background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-base); color: var(--text-1); font-size: var(--text-sm); outline: none; margin-bottom: 6px;">
+            <option value="">— no models —</option>
+          </select>
+          <button id="gltf-add-btn" class="btn" style="width: 100%; margin-bottom: 8px;" disabled>Add to Scene</button>
+          <div id="gltf-drop-zone" style="border: 1px dashed var(--border-subtle); border-radius: var(--radius-base); padding: 12px; text-align: center; color: var(--text-4); font-size: var(--text-xs); cursor: pointer;">
+            Drop .glb / .gltf here
           </div>
         </div>
 
@@ -196,6 +208,10 @@ export function renderEditorShell(): void {
           Orbit: left drag · Pan: right drag · Zoom: scroll<br>
           W = Move · E = Rotate · R = Scale · Del = Delete
         </div>
+        <div id="camera-preview-overlay" style="display: none; position: absolute; bottom: 12px; right: 12px; background: rgba(10, 10, 10, 0.9); border: 1px solid var(--accent); border-radius: var(--radius-base); overflow: hidden; width: 240px;">
+          <img id="preview-img" alt="" style="display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;" />
+          <div id="preview-label" style="color: var(--accent); font-size: var(--text-xs); text-align: center; font-weight: 600; padding: 4px 8px; background: rgba(10, 10, 10, 0.9);"></div>
+        </div>
       </div>
 
       <!-- RIGHT PANEL -->
@@ -207,11 +223,31 @@ export function renderEditorShell(): void {
           <button id="delete-element-btn" class="btn" style="width: 100%; margin-top: 8px; border-color: var(--color-error); color: var(--color-error);">Delete</button>
         </div>
 
-        <!-- Shot List -->
+        <!-- Shot Sequence -->
         <div class="panel-section">
-          <div class="section-label">Shot List</div>
-          <div id="shot-list-container" style="font: 400 var(--text-xs)/var(--lh-base) var(--font-mono); color: var(--text-3);">
-            No cameras placed yet
+          <div class="section-label">Shot Sequence</div>
+          <button id="sequence-mode-btn" class="btn" style="width: 100%; margin-bottom: 6px;">Sequence Mode</button>
+          <button id="sequence-reset-btn" class="btn" style="width: 100%;">Clear Sequence</button>
+          <div id="sequence-hint" style="display: none; margin-top: 8px; padding: 8px; background: rgba(232, 160, 32, 0.1); border: 1px solid rgba(232, 160, 32, 0.3); border-radius: var(--radius-base); font-size: var(--text-xs); color: var(--accent); line-height: var(--lh-base);">
+            Click cameras in order to assign shot numbers
+          </div>
+        </div>
+
+        <!-- Shot Review -->
+        <div class="panel-section">
+          <div class="section-label">Review</div>
+          <button id="review-mode-btn" class="btn" style="width: 100%; margin-bottom: 6px;">Review Shots</button>
+          <div id="shot-review-panel" style="display: none; margin-top: 8px; padding: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-base);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span id="shot-review-number" style="color: #38bdf8; font-size: var(--text-sm); font-weight: 600;">Shot 1</span>
+              <button id="shot-review-exit" style="background: none; border: none; color: var(--text-4); font-size: var(--text-xs); cursor: pointer; padding: 0;">✕</button>
+            </div>
+            <div id="shot-review-type" style="color: var(--text-3); font-size: var(--text-xs); margin-bottom: 4px;"></div>
+            <div id="shot-review-label" style="color: var(--text-2); font-size: var(--text-sm); font-style: italic; margin-bottom: 8px;"></div>
+            <div style="display: flex; gap: 6px;">
+              <button id="shot-prev-btn" class="btn" style="flex: 1; padding: 6px;">◀</button>
+              <button id="shot-next-btn" class="btn" style="flex: 1; padding: 6px;">▶</button>
+            </div>
           </div>
         </div>
 

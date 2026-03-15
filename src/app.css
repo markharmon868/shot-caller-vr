@@ -1,22 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
 :root {
-  color: #f8fafc;
-  background: #09111f;
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: #f0f0f0;
+  background: #0a0a0a;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color-scheme: dark;
-  --shell-cyan: #38bdf8;
-  --shell-border: rgba(56, 189, 248, 0.35);
-  --shell-card: rgba(15, 23, 42, 0.78);
-  --shell-panel: rgba(15, 23, 42, 0.66);
-  --shell-muted: #94a3b8;
-  --intake-amber: #f59e0b;
-  --intake-panel: rgba(12, 16, 27, 0.82);
-  --intake-panel-strong: rgba(17, 24, 39, 0.92);
-  --intake-border: rgba(148, 163, 184, 0.22);
-  --intake-text: #f8fafc;
-  --intake-muted: #9ca3af;
-  --intake-accent: #fbbf24;
-  --intake-danger: #fb7185;
-  --intake-success: #34d399;
+  --shell-accent: #e8a020;
+  --shell-border: rgba(255, 255, 255, 0.08);
+  --shell-card: rgba(20, 20, 20, 0.85);
+  --shell-panel: rgba(14, 14, 14, 0.75);
+  --shell-muted: #909090;
+  --intake-amber: #e8a020;
+  --intake-panel: rgba(10, 10, 10, 0.85);
+  --intake-panel-strong: rgba(14, 14, 14, 0.95);
+  --intake-border: rgba(255, 255, 255, 0.08);
+  --intake-text: #f0f0f0;
+  --intake-muted: #909090;
+  --intake-accent: #e8a020;
+  --intake-danger: #c0392b;
+  --intake-success: #27ae60;
 }
 
 * {
@@ -27,7 +29,7 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #09111f;
+  background: #0a0a0a;
 }
 
 body {
@@ -42,17 +44,12 @@ body {
 .app-root-review,
 .app-root-static {
   position: relative;
-  background:
-    radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 40%),
-    linear-gradient(180deg, #020617 0%, #020617 45%, #0f172a 100%);
+  background: #0a0a0a;
 }
 
 .app-root-intake {
   overflow-y: auto;
-  background:
-    radial-gradient(circle at top left, rgba(251, 191, 36, 0.18), transparent 30%),
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 35%),
-    linear-gradient(180deg, #06080f 0%, #0f172a 100%);
+  background: #0a0a0a;
 }
 
 #scene-container {
