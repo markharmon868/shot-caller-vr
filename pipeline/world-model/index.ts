@@ -43,10 +43,13 @@ export interface WorldModelResult {
 }
 
 function getApiKey(): string {
+  if (process.env.SHOT_CALLER_PIPELINE_MODE === "mock") {
+    return "mock-key";
+  }
   const key = process.env.WORLD_LABS_API_KEY;
   if (!key) {
     throw new Error(
-      "WORLD_LABS_API_KEY is required. Add to .env (get one at worldlabs.ai)"
+      "WORLD_LABS_API_KEY is required. Add to .env (get one at worldlabs.ai, or set SHOT_CALLER_PIPELINE_MODE=mock for local dev)"
     );
   }
   return key;
@@ -328,6 +331,35 @@ export async function generateWorldModel(
     return {
       success: false,
       error: `Provider "${provider}" not implemented. Use "marble".`,
+    };
+  }
+
+  // Mock mode: short-circuit to existing local splat
+  if (process.env.SHOT_CALLER_PIPELINE_MODE === "mock") {
+    const mockSplatPath = path.resolve(__dirname, "../../public/splats/generated.spz");
+    if (fs.existsSync(mockSplatPath)) {
+      console.log(`[MOCK] Using existing splat: ${mockSplatPath}`);
+      // Copy to output path if different
+      if (mockSplatPath !== outputPath) {
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        fs.copyFileSync(mockSplatPath, outputPath);
+        console.log(`  Copied to: ${outputPath}`);
+      }
+      return {
+        success: true,
+        splatPath: outputPath,
+        worldId: "mock-local",
+      };
+    }
+    // If no existing splat, create a minimal placeholder
+    console.log(`[MOCK] No existing splat found, creating placeholder at: ${outputPath}`);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    // Create a minimal file (real .spz files are binary, but this is just for dev)
+    fs.writeFileSync(outputPath, Buffer.from("MOCK_SPLAT_PLACEHOLDER"));
+    return {
+      success: true,
+      splatPath: outputPath,
+      worldId: "mock-placeholder",
     };
   }
 
