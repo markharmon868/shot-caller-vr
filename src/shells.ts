@@ -486,9 +486,10 @@ export function renderHomeShell(): void {
             <span class="home-nav-wordmark">Shot Caller</span>
           </div>
           <div class="home-nav-links">
+            <a href="?mode=create" class="home-nav-link">Create</a>
             <a href="?mode=editor" class="home-nav-link">Editor</a>
-            <a href="?mode=intake" class="home-nav-link">Intake</a>
-            <a href="?mode=create" class="home-nav-cta-sm">Create World</a>
+            <a href="?mode=export&scene=demo" class="home-nav-link">Export</a>
+            <a href="?mode=create" class="home-nav-cta-sm">Start Now</a>
           </div>
         </div>
       </nav>
@@ -520,22 +521,27 @@ export function renderHomeShell(): void {
       <section class="home-section">
         <div class="home-section-inner">
           <p class="home-section-kicker">How It Works</p>
-          <h2 class="home-section-title">Three steps from concept to VR walkthrough</h2>
+          <h2 class="home-section-title">Four steps from concept to production report</h2>
           <div class="home-steps">
             <div class="home-step">
               <div class="home-step-num">01</div>
-              <h3>Upload & Describe</h3>
-              <p>Drop in reference photos — scout imagery, stills, sketches — and describe the scene in natural language. No 3D skills needed.</p>
+              <h3>Upload & Enhance</h3>
+              <p>Drop in reference photos and describe your scene. Nano Banana enhances images for photorealistic quality.</p>
             </div>
             <div class="home-step">
               <div class="home-step-num">02</div>
-              <h3>Generate World</h3>
-              <p>Our pipeline turns your inputs into a Gaussian Splat — a photorealistic 3D environment built from your references and text.</p>
+              <h3>Generate 3D World</h3>
+              <p>Our pipeline creates a Gaussian Splat — a photorealistic 3D environment built from your enhanced images and description.</p>
             </div>
             <div class="home-step">
               <div class="home-step-num">03</div>
               <h3>Enter VR & Block</h3>
-              <p>Walk through the world on a Meta Quest. Place cameras, actors, and lights. Build your shot list inside the actual environment.</p>
+              <p>Walk through the world on Meta Quest or desktop. Place cameras, actors, lights, and equipment. Build your shot list in 3D space.</p>
+            </div>
+            <div class="home-step">
+              <div class="home-step-num">04</div>
+              <h3>Export Report</h3>
+              <p>Generate a professional pre-production report with screenshots, shot lists, and technical details ready for your team.</p>
             </div>
           </div>
         </div>
@@ -574,8 +580,18 @@ export function renderHomeShell(): void {
             </div>
             <div class="home-feature">
               <div class="home-feature-icon">🤖</div>
-              <h4>AI-Assisted Intake</h4>
-              <p>Describe your vision in conversation. Our agent asks the right follow-up questions to build your world.</p>
+              <h4>AI-Enhanced Images</h4>
+              <p>Nano Banana uses Gemini to enhance your input images, creating higher fidelity, more photorealistic results.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">📄</div>
+              <h4>Professional Reports</h4>
+              <p>Export beautiful pre-production reports with screenshots, shot lists, and technical details for your team.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">🔗</div>
+              <h4>URL-Based Sharing</h4>
+              <p>Share scenes instantly via URL — no file exports needed. Perfect for remote collaboration and client reviews.</p>
             </div>
           </div>
         </div>

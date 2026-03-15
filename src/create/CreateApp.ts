@@ -16,6 +16,47 @@ import {
   type EnhancedImage,
 } from "../pipeline/nano-banana.js";
 
+// ── Norman: Toast system — no silent failures ──
+
+function ensureToastContainer(): HTMLElement {
+  let container = document.querySelector(".toast-container") as HTMLElement | null;
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container";
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function toast(message: string, type: "info" | "success" | "error" | "warning" = "info"): void {
+  const container = ensureToastContainer();
+  const el = document.createElement("div");
+  el.className = `toast toast-${type}`;
+  el.textContent = message;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("toast-visible"));
+  setTimeout(() => {
+    el.classList.remove("toast-visible");
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
+}
+
+// ── Jobs: Cinematic VR transition overlay ──
+
+function showVRTransition(targetUrl: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "vr-transition-overlay";
+  overlay.innerHTML = `
+    <div class="vr-transition-ring"></div>
+    <div class="vr-transition-text">Entering Scene</div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add("active"));
+  setTimeout(() => {
+    window.location.href = targetUrl;
+  }, 1400);
+}
+
 type FilePreview = {
   file: File;
   objectUrl: string;
@@ -108,6 +149,14 @@ class CreateApp {
     // Generate button
     this.generateBtn.addEventListener("click", () => this.handleGenerate());
 
+    // Jobs: Enter VR with cinematic transition (intercept click)
+    this.enterVrBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const href = this.enterVrBtn.href;
+      if (!href || href === "#") return;
+      showVRTransition(href);
+    });
+
     // API key save button
     this.saveKeyBtn.addEventListener("click", () => this.handleSaveApiKey());
   }
@@ -156,12 +205,24 @@ class CreateApp {
       f.type === "image/png" || f.type === "image/jpeg" || f.type === "image/webp",
     );
 
+    const skipped = incoming.length - imageFiles.length;
+    if (skipped > 0) {
+      toast(`${skipped} file${skipped > 1 ? "s" : ""} skipped — only PNG, JPG, and WebP accepted`, "warning");
+    }
+
     const remaining = MAX_FILES - this.files.length;
+    if (imageFiles.length > remaining) {
+      toast(`Only ${remaining} more image${remaining !== 1 ? "s" : ""} allowed (max ${MAX_FILES})`, "warning");
+    }
     const toAdd = imageFiles.slice(0, remaining);
 
     for (const file of toAdd) {
       const objectUrl = URL.createObjectURL(file);
       this.files.push({ file, objectUrl });
+    }
+
+    if (toAdd.length > 0) {
+      toast(`${toAdd.length} image${toAdd.length > 1 ? "s" : ""} added`, "success");
     }
 
     this.renderPreviews();
@@ -172,16 +233,20 @@ class CreateApp {
     const removed = this.files.splice(index, 1);
     if (removed.length > 0) {
       URL.revokeObjectURL(removed[0].objectUrl);
+      toast(`Removed ${removed[0].file.name}`, "info");
     }
     this.renderPreviews();
     this.updateGenerateButton();
   }
 
   private renderPreviews(): void {
-    this.fileCount.textContent =
-      this.files.length === 0
-        ? "No files selected"
-        : `${this.files.length} image${this.files.length > 1 ? "s" : ""}`;
+    if (this.files.length === 0) {
+      this.fileCount.textContent = "No files selected";
+    } else {
+      const totalBytes = this.files.reduce((sum, fp) => sum + fp.file.size, 0);
+      const sizeMb = (totalBytes / (1024 * 1024)).toFixed(1);
+      this.fileCount.textContent = `${this.files.length} image${this.files.length > 1 ? "s" : ""} · ${sizeMb} MB`;
+    }
 
     this.previewGrid.innerHTML = this.files
       .map(
@@ -222,8 +287,10 @@ class CreateApp {
     if (!this.canGenerate()) return;
 
     this.isGenerating = true;
+    this.generateBtn.classList.add("generating");
     this.updateGenerateButton();
     this.hideError();
+    toast("Starting world generation…", "info");
 
     try {
       // Step 1: Enhance images with Nano Banana (if available)
@@ -262,11 +329,15 @@ class CreateApp {
       this.generatedSceneId = sceneId;
       this.statusCard.style.display = "none";
       this.showVRSection(sceneId);
+      toast("World ready — enter VR or open the editor", "success");
     } catch (err) {
       this.statusCard.style.display = "none";
-      this.showError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      this.showError(msg);
+      toast(msg, "error");
     } finally {
       this.isGenerating = false;
+      this.generateBtn.classList.remove("generating");
       this.updateGenerateButton();
     }
   }

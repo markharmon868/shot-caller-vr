@@ -967,8 +967,8 @@ body {
 /* ── Steps ── */
 .home-steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
 }
 
 .home-step {
@@ -1012,7 +1012,7 @@ body {
 /* ── Features ── */
 .home-features {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 
