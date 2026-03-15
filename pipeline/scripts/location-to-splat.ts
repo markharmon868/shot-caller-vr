@@ -93,7 +93,7 @@ async function main() {
   const project = process.env.GOOGLE_CLOUD_PROJECT;
   if (!project) throw new Error("GOOGLE_CLOUD_PROJECT is required.");
   const region = process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1";
-  const VERTEX_MODEL = process.env.VERTEX_AI_MODEL ?? "gemini-2.0-flash-preview-image-generation";
+  const VERTEX_MODEL = process.env.VERTEX_AI_MODEL ?? "gemini-2.5-flash-image";
 
   const vertexAI = new VertexAI({ project, location: region });
   const model = vertexAI.getGenerativeModel({

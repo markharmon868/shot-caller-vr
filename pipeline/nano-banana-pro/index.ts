@@ -96,7 +96,7 @@ export async function generateReferenceImages(
 
   const vertexAI = new VertexAI({ project, location });
 
-  const VERTEX_MODEL = process.env.VERTEX_AI_MODEL ?? "gemini-2.0-flash-preview-image-generation";
+  const VERTEX_MODEL = process.env.VERTEX_AI_MODEL ?? "gemini-2.5-flash-image";
   // responseModalities is supported at runtime but not yet in the SDK type definitions
   const model = vertexAI.getGenerativeModel({
     model: VERTEX_MODEL,
