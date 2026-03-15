@@ -1,4 +1,6 @@
 export type AppMode =
+  | "home"
+  | "create"
   | "intake"
   | "editor"
   | "stage4-xr"
@@ -21,7 +23,9 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   const sceneAvailable = hasSceneId(url);
 
   if (
-    explicitMode === "intake"
+    explicitMode === "home"
+    || explicitMode === "create"
+    || explicitMode === "intake"
     || explicitMode === "editor"
     || explicitMode === "stage4-xr"
     || explicitMode === "stage5-xr"
@@ -40,6 +44,6 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   if (headset && !sceneAvailable) {
     return "headset-empty";
   }
-  // Desktop: always land in editor (intake is only reachable via ?mode=intake)
-  return "editor";
+  // Desktop: land on marketing home by default
+  return "home";
 }

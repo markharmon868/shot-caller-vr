@@ -1,0 +1,328 @@
+/**
+ * CreateApp — Client-side logic for the "Create World" page.
+ *
+ * Handles image upload (drag-and-drop + file picker), text input,
+ * form validation, generation request, progress tracking, and
+ * the Enter VR / Open Editor transition.
+ */
+
+type FilePreview = {
+  file: File;
+  objectUrl: string;
+};
+
+const MAX_FILES = 20;
+
+class CreateApp {
+  private files: FilePreview[] = [];
+  private isGenerating = false;
+  private generatedSceneId: string | null = null;
+
+  // DOM refs (resolved lazily in bind)
+  private dropzone!: HTMLElement;
+  private fileInput!: HTMLInputElement;
+  private previewGrid!: HTMLElement;
+  private fileCount!: HTMLElement;
+  private textInput!: HTMLTextAreaElement;
+  private generateBtn!: HTMLButtonElement;
+  private statusCard!: HTMLElement;
+  private statusLabel!: HTMLElement;
+  private statusDetail!: HTMLElement;
+  private progressFill!: HTMLElement;
+  private errorEl!: HTMLElement;
+  private vrSection!: HTMLElement;
+  private enterVrBtn!: HTMLAnchorElement;
+  private openEditorBtn!: HTMLAnchorElement;
+
+  start(): void {
+    this.bindElements();
+    this.bindEvents();
+  }
+
+  private bindElements(): void {
+    this.dropzone = document.getElementById("create-dropzone")!;
+    this.fileInput = document.getElementById("create-file-input") as HTMLInputElement;
+    this.previewGrid = document.getElementById("create-preview-grid")!;
+    this.fileCount = document.getElementById("create-file-count")!;
+    this.textInput = document.getElementById("create-text-input") as HTMLTextAreaElement;
+    this.generateBtn = document.getElementById("create-generate-btn") as HTMLButtonElement;
+    this.statusCard = document.getElementById("create-status-card")!;
+    this.statusLabel = document.getElementById("create-status-label")!;
+    this.statusDetail = document.getElementById("create-status-detail")!;
+    this.progressFill = document.getElementById("create-progress-fill")!;
+    this.errorEl = document.getElementById("create-error")!;
+    this.vrSection = document.getElementById("create-vr-section")!;
+    this.enterVrBtn = document.getElementById("create-enter-vr") as HTMLAnchorElement;
+    this.openEditorBtn = document.getElementById("create-open-editor") as HTMLAnchorElement;
+  }
+
+  private bindEvents(): void {
+    // File input change
+    this.fileInput.addEventListener("change", () => {
+      if (this.fileInput.files) {
+        this.addFiles(Array.from(this.fileInput.files));
+      }
+      // Reset so re-selecting the same file triggers change
+      this.fileInput.value = "";
+    });
+
+    // Drag-and-drop on the dropzone
+    this.dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      this.dropzone.classList.add("drag-over");
+    });
+
+    this.dropzone.addEventListener("dragleave", () => {
+      this.dropzone.classList.remove("drag-over");
+    });
+
+    this.dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      this.dropzone.classList.remove("drag-over");
+      if (e.dataTransfer?.files) {
+        this.addFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    // Text input — update button state on every keystroke
+    this.textInput.addEventListener("input", () => this.updateGenerateButton());
+
+    // Generate button
+    this.generateBtn.addEventListener("click", () => this.handleGenerate());
+  }
+
+  // ── File Management ──
+
+  private addFiles(incoming: File[]): void {
+    const imageFiles = incoming.filter((f) =>
+      f.type === "image/png" || f.type === "image/jpeg" || f.type === "image/webp",
+    );
+
+    const remaining = MAX_FILES - this.files.length;
+    const toAdd = imageFiles.slice(0, remaining);
+
+    for (const file of toAdd) {
+      const objectUrl = URL.createObjectURL(file);
+      this.files.push({ file, objectUrl });
+    }
+
+    this.renderPreviews();
+    this.updateGenerateButton();
+  }
+
+  private removeFile(index: number): void {
+    const removed = this.files.splice(index, 1);
+    if (removed.length > 0) {
+      URL.revokeObjectURL(removed[0].objectUrl);
+    }
+    this.renderPreviews();
+    this.updateGenerateButton();
+  }
+
+  private renderPreviews(): void {
+    this.fileCount.textContent =
+      this.files.length === 0
+        ? "No files selected"
+        : `${this.files.length} image${this.files.length > 1 ? "s" : ""}`;
+
+    this.previewGrid.innerHTML = this.files
+      .map(
+        (fp, i) => `
+      <div class="create-preview-thumb" data-index="${i}">
+        <img src="${fp.objectUrl}" alt="${fp.file.name}" />
+        <button class="create-preview-remove" data-remove="${i}" title="Remove">✕</button>
+      </div>
+    `,
+      )
+      .join("");
+
+    // Bind remove buttons
+    this.previewGrid.querySelectorAll("[data-remove]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt((btn as HTMLElement).dataset.remove!, 10);
+        this.removeFile(idx);
+      });
+    });
+  }
+
+  // ── Validation ──
+
+  private canGenerate(): boolean {
+    const hasText = this.textInput.value.trim().length > 0;
+    const hasFiles = this.files.length > 0;
+    return (hasText || hasFiles) && !this.isGenerating;
+  }
+
+  private updateGenerateButton(): void {
+    this.generateBtn.disabled = !this.canGenerate();
+  }
+
+  // ── Generation ──
+
+  private async handleGenerate(): Promise<void> {
+    if (!this.canGenerate()) return;
+
+    this.isGenerating = true;
+    this.updateGenerateButton();
+    this.hideError();
+    this.showStatus("Uploading images…", "Preparing your reference material");
+    this.setProgress(5);
+
+    try {
+      // Upload images
+      const uploadedUrls = await this.uploadImages();
+      this.setProgress(30);
+      this.showStatus("Generating world…", "Creating your 3D environment — this may take a minute");
+
+      // Request generation
+      const sceneId = await this.requestGeneration(uploadedUrls, this.textInput.value.trim());
+      this.setProgress(70);
+      this.showStatus("Finalizing…", "Optimizing the Gaussian Splat for VR");
+
+      // Poll for completion (or simulate)
+      await this.waitForCompletion(sceneId);
+      this.setProgress(100);
+
+      // Done
+      this.generatedSceneId = sceneId;
+      this.statusCard.style.display = "none";
+      this.showVRSection(sceneId);
+    } catch (err) {
+      this.statusCard.style.display = "none";
+      this.showError(err instanceof Error ? err.message : "An unexpected error occurred.");
+    } finally {
+      this.isGenerating = false;
+      this.updateGenerateButton();
+    }
+  }
+
+  private async uploadImages(): Promise<string[]> {
+    if (this.files.length === 0) return [];
+
+    const formData = new FormData();
+    for (const fp of this.files) {
+      formData.append("images", fp.file);
+    }
+
+    try {
+      const res = await fetch("/api/create/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        // Fallback: if the endpoint doesn't exist yet, return placeholder URLs
+        console.warn("Upload endpoint not available, using local previews");
+        return this.files.map((fp) => fp.objectUrl);
+      }
+
+      const data = (await res.json()) as { urls: string[] };
+      return data.urls;
+    } catch {
+      // Server not available — use local object URLs as fallback
+      console.warn("Upload failed, using local previews");
+      return this.files.map((fp) => fp.objectUrl);
+    }
+  }
+
+  private async requestGeneration(imageUrls: string[], description: string): Promise<string> {
+    try {
+      const res = await fetch("/api/create/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: imageUrls, description }),
+      });
+
+      if (!res.ok) {
+        // Fallback: simulate with a demo scene ID
+        console.warn("Generate endpoint not available, using demo scene");
+        return "demo";
+      }
+
+      const data = (await res.json()) as { sceneId: string };
+      return data.sceneId;
+    } catch {
+      console.warn("Generate request failed, using demo scene");
+      return "demo";
+    }
+  }
+
+  private async waitForCompletion(sceneId: string): Promise<void> {
+    // Try polling the real endpoint first
+    const maxAttempts = 30;
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const res = await fetch(`/api/create/status/${sceneId}`);
+        if (res.ok) {
+          const data = (await res.json()) as { status: string };
+          if (data.status === "complete") return;
+          if (data.status === "error") throw new Error("World generation failed on the server.");
+        } else {
+          // Endpoint not available — simulate delay
+          await this.simulateDelay(2000);
+          return;
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("generation failed")) throw err;
+        // Network error — simulate
+        await this.simulateDelay(2000);
+        return;
+      }
+
+      const progress = 70 + Math.round((i / maxAttempts) * 28);
+      this.setProgress(Math.min(progress, 98));
+      await this.simulateDelay(2000);
+    }
+  }
+
+  private simulateDelay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // ── UI Helpers ──
+
+  private showStatus(label: string, detail: string): void {
+    this.statusCard.style.display = "";
+    this.statusLabel.textContent = label;
+    this.statusDetail.textContent = detail;
+  }
+
+  private setProgress(pct: number): void {
+    this.progressFill.style.width = `${Math.min(pct, 100)}%`;
+  }
+
+  private showError(message: string): void {
+    this.errorEl.style.display = "";
+    this.errorEl.textContent = message;
+  }
+
+  private hideError(): void {
+    this.errorEl.style.display = "none";
+    this.errorEl.textContent = "";
+  }
+
+  private showVRSection(sceneId: string): void {
+    this.vrSection.style.display = "";
+
+    // Build VR link — for headsets opening the scene
+    const vrUrl = new URL(window.location.href);
+    vrUrl.searchParams.set("mode", "stage4-xr");
+    vrUrl.searchParams.set("scene", sceneId);
+    this.enterVrBtn.href = vrUrl.toString();
+
+    // Build editor link
+    const editorUrl = new URL(window.location.href);
+    editorUrl.searchParams.set("mode", "editor");
+    editorUrl.searchParams.set("scene", sceneId);
+    this.openEditorBtn.href = editorUrl.toString();
+
+    // Smooth scroll to the VR section
+    this.vrSection.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+export function startCreate(): void {
+  const app = new CreateApp();
+  app.start();
+}

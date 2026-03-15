@@ -471,6 +471,262 @@ export function renderEditorShell(): void {
   `;
 }
 
+export function renderHomeShell(): void {
+  removeEditorStyle();
+  document.body.className = "shot-caller-body-home";
+  document.title = "Shot Caller — Generative Worlds for Film Pre-vis";
+  document.body.innerHTML = `
+    <div id="app-root" class="app-root-home">
+
+      <!-- ── NAV ── -->
+      <nav class="home-nav">
+        <div class="home-nav-inner">
+          <div class="home-nav-brand">
+            <img src="./SensAI-logo.png" alt="SensAI" class="home-nav-logo" />
+            <span class="home-nav-wordmark">Shot Caller</span>
+          </div>
+          <div class="home-nav-links">
+            <a href="?mode=editor" class="home-nav-link">Editor</a>
+            <a href="?mode=intake" class="home-nav-link">Intake</a>
+            <a href="?mode=create" class="home-nav-cta-sm">Create World</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ── HERO ── -->
+      <section class="home-hero">
+        <div class="home-hero-inner">
+          <p class="home-badge">Generative Pre-vis for Film</p>
+          <h1 class="home-headline">
+            Describe a location.<br/>
+            <span class="home-headline-accent">Walk through it in VR.</span>
+          </h1>
+          <p class="home-subhead">
+            Upload reference images and describe your scene in plain text.
+            Shot Caller generates a photorealistic 3D world you can explore,
+            block, and share — before you ever step on set.
+          </p>
+          <div class="home-hero-actions">
+            <a href="?mode=create" class="home-btn-primary" id="hero-cta">
+              <span class="home-btn-icon">✦</span> Create a World
+            </a>
+            <a href="?mode=editor" class="home-btn-secondary">Open Editor</a>
+          </div>
+        </div>
+        <div class="home-hero-glow"></div>
+      </section>
+
+      <!-- ── HOW IT WORKS ── -->
+      <section class="home-section">
+        <div class="home-section-inner">
+          <p class="home-section-kicker">How It Works</p>
+          <h2 class="home-section-title">Three steps from concept to VR walkthrough</h2>
+          <div class="home-steps">
+            <div class="home-step">
+              <div class="home-step-num">01</div>
+              <h3>Upload & Describe</h3>
+              <p>Drop in reference photos — scout imagery, stills, sketches — and describe the scene in natural language. No 3D skills needed.</p>
+            </div>
+            <div class="home-step">
+              <div class="home-step-num">02</div>
+              <h3>Generate World</h3>
+              <p>Our pipeline turns your inputs into a Gaussian Splat — a photorealistic 3D environment built from your references and text.</p>
+            </div>
+            <div class="home-step">
+              <div class="home-step-num">03</div>
+              <h3>Enter VR & Block</h3>
+              <p>Walk through the world on a Meta Quest. Place cameras, actors, and lights. Build your shot list inside the actual environment.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── FEATURES ── -->
+      <section class="home-section home-section-alt">
+        <div class="home-section-inner">
+          <p class="home-section-kicker">Built for Filmmakers</p>
+          <h2 class="home-section-title">Every tool a director needs, nothing they don't</h2>
+          <div class="home-features">
+            <div class="home-feature">
+              <div class="home-feature-icon">🎥</div>
+              <h4>Camera Placement</h4>
+              <p>Place virtual cameras with real lens metadata — focal length, movement type, and director's notes.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">🌐</div>
+              <h4>Gaussian Splat Worlds</h4>
+              <p>Photorealistic 3D environments generated from Street View, drone footage, or your own reference images.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">🥽</div>
+              <h4>WebXR Native</h4>
+              <p>Preview directly on Meta Quest 3. No app installs, no sideloading — just open the link and walk in.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">✕</div>
+              <h4>Cast & Crew Blocking</h4>
+              <p>Place actors, crew, equipment, and props in 3D space. Build the blocking before you build the set.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">📋</div>
+              <h4>Shot Sequencing</h4>
+              <p>Click cameras in order to build a shot list. Review them in sequence with a single button.</p>
+            </div>
+            <div class="home-feature">
+              <div class="home-feature-icon">🤖</div>
+              <h4>AI-Assisted Intake</h4>
+              <p>Describe your vision in conversation. Our agent asks the right follow-up questions to build your world.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── FINAL CTA ── -->
+      <section class="home-section home-cta-section">
+        <div class="home-section-inner" style="text-align:center">
+          <h2 class="home-section-title">Ready to walk through your next scene?</h2>
+          <p class="home-subhead" style="max-width:540px;margin:0 auto 2rem">
+            No 3D experience required. Upload your references, describe your vision,
+            and step into the world.
+          </p>
+          <a href="?mode=create" class="home-btn-primary home-btn-lg">
+            <span class="home-btn-icon">✦</span> Create a World
+          </a>
+        </div>
+      </section>
+
+      <!-- ── FOOTER ── -->
+      <footer class="home-footer">
+        <div class="home-footer-inner">
+          <span class="home-footer-brand">Shot Caller · SensAI</span>
+          <span class="home-footer-muted">Generative worlds for film pre-visualization</span>
+        </div>
+      </footer>
+
+    </div>
+  `;
+}
+
+export function renderCreateShell(): void {
+  removeEditorStyle();
+  document.body.className = "shot-caller-body-create";
+  document.title = "Create World — Shot Caller";
+  document.body.innerHTML = `
+    <div id="app-root" class="app-root-create">
+
+      <!-- ── NAV ── -->
+      <nav class="home-nav">
+        <div class="home-nav-inner">
+          <a href="?" class="home-nav-brand" style="text-decoration:none">
+            <img src="./SensAI-logo.png" alt="SensAI" class="home-nav-logo" />
+            <span class="home-nav-wordmark">Shot Caller</span>
+          </a>
+          <div class="home-nav-links">
+            <a href="?" class="home-nav-link">Home</a>
+            <a href="?mode=editor" class="home-nav-link">Editor</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ── CREATE FORM ── -->
+      <main class="create-main">
+        <div class="create-container">
+
+          <div class="create-header">
+            <p class="home-badge">New World</p>
+            <h1 class="create-title">Create your world</h1>
+            <p class="create-subtitle">Upload reference images and describe your scene. We'll generate a 3D environment you can walk through in VR.</p>
+          </div>
+
+          <!-- Upload zone -->
+          <div class="create-card">
+            <div class="create-card-header">
+              <span class="create-card-label">Reference Images</span>
+              <span class="create-card-hint" id="create-file-count">No files selected</span>
+            </div>
+            <div class="create-dropzone" id="create-dropzone">
+              <div class="create-dropzone-content">
+                <div class="create-dropzone-icon">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="m21 15-5-5L5 21"/>
+                  </svg>
+                </div>
+                <p class="create-dropzone-text">Drop images here or <span class="create-dropzone-link">browse</span></p>
+                <p class="create-dropzone-hint">PNG, JPG, or WebP · up to 20 images</p>
+              </div>
+              <input type="file" id="create-file-input" multiple accept="image/png,image/jpeg,image/webp" class="create-file-hidden" />
+            </div>
+            <div class="create-preview-grid" id="create-preview-grid"></div>
+          </div>
+
+          <!-- Text description -->
+          <div class="create-card">
+            <div class="create-card-header">
+              <span class="create-card-label">Scene Description</span>
+              <span class="create-card-hint">Plain English — be as specific as you like</span>
+            </div>
+            <textarea
+              id="create-text-input"
+              class="create-textarea"
+              placeholder="Describe the scene you want to create…&#10;&#10;Example: A narrow cobblestone alley in Rome at golden hour. Warm light spills between terracotta buildings. A small café with outdoor seating sits at the end of the alley. Vespa parked against a wall."
+              rows="6"
+            ></textarea>
+          </div>
+
+          <!-- Generation status (hidden until generation starts) -->
+          <div class="create-card create-status-card" id="create-status-card" style="display:none">
+            <div class="create-status-row">
+              <div class="create-spinner" id="create-spinner"></div>
+              <div class="create-status-text">
+                <p class="create-status-label" id="create-status-label">Generating world…</p>
+                <p class="create-status-detail" id="create-status-detail">This may take a minute or two</p>
+              </div>
+            </div>
+            <div class="create-progress-bar">
+              <div class="create-progress-fill" id="create-progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- Error display -->
+          <div class="create-error" id="create-error" style="display:none"></div>
+
+          <!-- Actions -->
+          <div class="create-actions">
+            <button class="home-btn-primary home-btn-lg create-generate-btn" id="create-generate-btn" disabled>
+              <span class="home-btn-icon">✦</span> Generate World
+            </button>
+          </div>
+
+          <!-- Enter VR (hidden until world is ready) -->
+          <div class="create-vr-section" id="create-vr-section" style="display:none">
+            <div class="create-vr-card">
+              <div class="create-vr-status">
+                <div class="create-vr-check">✓</div>
+                <div>
+                  <p class="create-vr-ready">World ready</p>
+                  <p class="create-vr-hint">Your 3D environment has been generated</p>
+                </div>
+              </div>
+              <div class="create-vr-actions">
+                <a class="home-btn-primary home-btn-lg create-enter-vr" id="create-enter-vr" href="#">
+                  🥽 Enter VR
+                </a>
+                <a class="home-btn-secondary" id="create-open-editor" href="?mode=editor">
+                  Open in Editor
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  `;
+}
+
 export function renderReviewShell(): void {
   removeEditorStyle();
   document.body.className = "shot-caller-body-review";

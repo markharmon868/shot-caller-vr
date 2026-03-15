@@ -2,8 +2,10 @@ import "./app.css";
 
 import { resolveAppMode } from "./routing.js";
 import {
+  renderCreateShell,
   renderEditorShell,
   renderHeadsetEmptyShell,
+  renderHomeShell,
   renderIntakeShell,
   renderReviewShell,
 } from "./shells.js";
@@ -11,6 +13,18 @@ import {
 async function start(): Promise<void> {
   const url = new URL(window.location.href);
   const mode = resolveAppMode(url, navigator.userAgent);
+
+  if (mode === "home") {
+    renderHomeShell();
+    return;
+  }
+
+  if (mode === "create") {
+    renderCreateShell();
+    const { startCreate } = await import("./create/CreateApp.js");
+    startCreate();
+    return;
+  }
 
   if (mode === "headset-empty") {
     renderHeadsetEmptyShell();
