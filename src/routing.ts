@@ -13,6 +13,15 @@ export function isHeadsetBrowser(userAgent: string): boolean {
   const headsetPattern = /OculusBrowser|PicoXR|SamsungBrowser\/.*VR|Mobile VR/i;
   if (!headsetPattern.test(userAgent)) return false;
 
+  // IWER dev emulator replaces navigator.userAgent with a Quest-like string
+  // on desktop browsers. Detect emulator via its injected global, or by
+  // checking for a fine pointer (mouse) which real headsets don't have.
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).__IWER_ACTIVE__ || (window as any).__iwer) return false;
+    if (window.matchMedia?.("(pointer: fine)")?.matches) return false;
+  }
+
   // Desktop browsers (including IWER dev emulator) should always be treated as desktop.
   // Real headset browsers don't include desktop OS tokens.
   const isDesktop = /Windows NT|Macintosh|X11.*Linux/i.test(userAgent);
