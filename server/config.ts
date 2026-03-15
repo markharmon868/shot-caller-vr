@@ -13,6 +13,9 @@ export const serverConfig = {
     intake: process.env.SHOT_CALLER_INTAKE_MODEL ?? "openrouter/openai/gpt-4.1-mini",
     imagePrompt: process.env.SHOT_CALLER_IMAGE_PROMPT_MODEL ?? "openrouter/openai/gpt-4.1-mini",
     meshyPrompt: process.env.SHOT_CALLER_MESHY_PROMPT_MODEL ?? "openrouter/openai/gpt-4.1-mini",
+    callSheet: process.env.SHOT_CALLER_CALL_SHEET_MODEL
+      ?? process.env.SHOT_CALLER_INTAKE_MODEL
+      ?? "openrouter/openai/gpt-4.1-mini",
   },
   upload: {
     maxFileSizeBytes: 10 * 1024 * 1024,

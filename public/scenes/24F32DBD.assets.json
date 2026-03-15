@@ -1,0 +1,152 @@
+{
+  "sceneId": "demo",
+  "version": 1,
+  "assets": [
+    {
+      "id": "asset-camera",
+      "kind": "camera",
+      "label": "Camera Marker",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        0.8,
+        1.2
+      ],
+      "helper": {
+        "color": "#4da3ff",
+        "footprintMeters": [
+          0.8,
+          1.2
+        ],
+        "heightMeters": 1.6,
+        "frustum": {
+          "fovDeg": 55,
+          "rangeMeters": 8
+        }
+      }
+    },
+    {
+      "id": "asset-light",
+      "kind": "light",
+      "label": "Light Marker",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        0.7,
+        0.7
+      ],
+      "helper": {
+        "color": "#ffd166",
+        "footprintMeters": [
+          0.7,
+          0.7
+        ],
+        "heightMeters": 2.2,
+        "cone": {
+          "angleDeg": 45,
+          "rangeMeters": 6
+        }
+      }
+    },
+    {
+      "id": "asset-crew",
+      "kind": "crew",
+      "label": "Crew Marker",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        0.6,
+        0.6
+      ],
+      "helper": {
+        "color": "#69db7c",
+        "footprintMeters": [
+          0.6,
+          0.6
+        ],
+        "heightMeters": 1.8
+      }
+    },
+    {
+      "id": "asset-cast-mark",
+      "kind": "castMark",
+      "label": "Cast Mark",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        0.4,
+        0.4
+      ],
+      "helper": {
+        "color": "#ff6b6b",
+        "footprintMeters": [
+          0.4,
+          0.4
+        ],
+        "heightMeters": 0.01
+      }
+    },
+    {
+      "id": "asset-equipment",
+      "kind": "equipment",
+      "label": "Equipment Marker",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        1.2,
+        0.8
+      ],
+      "helper": {
+        "color": "#c77dff",
+        "footprintMeters": [
+          1.2,
+          0.8
+        ],
+        "heightMeters": 1.4
+      }
+    },
+    {
+      "id": "asset-set-dressing",
+      "kind": "setDressing",
+      "label": "Set Dressing Marker",
+      "gltfUrl": "",
+      "defaultScale": [
+        1,
+        1,
+        1
+      ],
+      "footprint": [
+        1.4,
+        0.9
+      ],
+      "helper": {
+        "color": "#f06595",
+        "footprintMeters": [
+          1.4,
+          0.9
+        ],
+        "heightMeters": 1
+      }
+    }
+  ]
+}

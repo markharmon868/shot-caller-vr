@@ -14,6 +14,7 @@
     "test": "node --import tsx --test test/**/*.test.ts",
     "intake:list-threads": "tsx server/scripts/list-intake-threads.ts",
     "intake:delete-thread": "tsx server/scripts/delete-intake-thread.ts",
+    "call-sheet:generate": "tsx server/scripts/generate-call-sheet.ts",
     "pipeline:fetch": "tsx pipeline/scripts/fetch-street-view.ts",
     "pipeline:expand": "tsx pipeline/scripts/expand-images.ts",
     "pipeline:output": "tsx pipeline/scripts/prepare-output.ts",

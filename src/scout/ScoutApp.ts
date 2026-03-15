@@ -23,12 +23,18 @@ interface PipelineJob {
 
 let map: google.maps.Map;
 let panorama: google.maps.StreetViewPanorama;
-let marker: google.maps.Marker;
+let marker: google.maps.marker.AdvancedMarkerElement;
 let svService: google.maps.StreetViewService;
 let activeJobId: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-// Coordinates are null until the user explicitly selects a location
+// Coordinates set by explicit user action (map click, search, marker drag).
+// These are the only coordinates ever sent to the pipeline.
+let confirmedLat: number | null = null;
+let confirmedLng: number | null = null;
+
+// Mirrors the current Street View panorama position (may differ from confirmed
+// due to Google snapping). Used only for display, never for submission.
 let pendingLat: number | null = null;
 let pendingLng: number | null = null;
 
@@ -40,16 +46,18 @@ export function startScout(): void {
   }
   window.initScoutMap = initMap;
   const script = document.createElement("script");
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initScoutMap&libraries=places`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initScoutMap&libraries=places,marker&loading=async`;
   script.async = true;
   script.defer = true;
   script.onerror = () => showError("Failed to load Google Maps. Enable 'Maps JavaScript API' in Google Cloud Console.");
   document.head.appendChild(script);
 }
 
-function initMap(): void {
+async function initMap(): Promise<void> {
   const mapEl = document.getElementById("scout-map") as HTMLDivElement;
   const svEl = document.getElementById("scout-streetview") as HTMLDivElement;
+  const { AdvancedMarkerElement, PinElement } = await window.google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+  const { PlaceAutocompleteElement } = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
 
   map = new window.google.maps.Map(mapEl, {
     center: { lat: 34.0195, lng: -118.7350 }, // Malibu area default
@@ -72,19 +80,17 @@ function initMap(): void {
     visible: false, // hidden until user picks a location
   });
 
-  marker = new window.google.maps.Marker({
+  marker = new AdvancedMarkerElement({
     map,
-    visible: false,
-    draggable: true,
-    icon: {
-      path: window.google.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: "#f59e0b",
-      fillOpacity: 1,
-      strokeColor: "#fff",
-      strokeWeight: 2,
-    },
+    gmpDraggable: true,
+    content: new PinElement({
+      background: "#f59e0b",
+      borderColor: "#ffffff",
+      glyphColor: "#f59e0b",
+      scale: 1.15,
+    }).element,
   });
+  setMarkerVisible(false);
 
   svService = new window.google.maps.StreetViewService();
   map.setStreetView(panorama);
@@ -95,22 +101,35 @@ function initMap(): void {
     setLocation(e.latLng.lat(), e.latLng.lng(), "map_click");
   });
 
-  // Places Autocomplete search box
+  // Places search box
   const searchInput = document.getElementById("scout-search-input") as HTMLInputElement | null;
-  if (searchInput) {
-    const autocomplete = new window.google.maps.places.Autocomplete(searchInput, {
-      fields: ["geometry", "name"],
-    });
-    autocomplete.bindTo("bounds", map);
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry?.location) return;
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
+  if (searchInput?.parentElement) {
+    const searchElement = new PlaceAutocompleteElement();
+    searchElement.id = searchInput.id;
+    searchElement.setAttribute("placeholder", searchInput.placeholder);
+    searchElement.setAttribute("aria-label", "Search address or location");
+    searchElement.style.width = "100%";
+    searchElement.style.display = "block";
+    searchInput.replaceWith(searchElement);
+    searchElement.addEventListener("gmp-select", async (event: Event) => {
+      const selection = event as Event & { placePrediction?: { toPlace?: () => google.maps.places.Place } };
+      const place = selection.placePrediction?.toPlace?.();
+      if (!place) return;
+      await place.fetchFields({ fields: ["displayName", "location", "viewport"] });
+      const location = place.location;
+      if (!location) return;
+      const lat = location.lat();
+      const lng = location.lng();
+      const viewport = place.viewport;
+      if (viewport) {
+        map.fitBounds(viewport);
+      } else {
+        map.setCenter({ lat, lng });
+        map.setZoom(16);
+      }
       map.setCenter({ lat, lng });
-      map.setZoom(16);
       setLocation(lat, lng, "autocomplete");
-      searchInput.blur();
+      searchElement.blur();
     });
   }
 
@@ -120,18 +139,24 @@ function initMap(): void {
     setLocation(e.latLng.lat(), e.latLng.lng(), "marker_drag");
   });
 
-  // Street view navigation → sync coords back to map
+  // Street view navigation → sync marker position only.
+  // Do NOT update confirmedLat/confirmedLng here — Google may snap the panorama
+  // to a nearby pano (different coords) when coverage is sparse, which would
+  // silently overwrite the user's explicit map selection.
   panorama.addListener("position_changed", () => {
     const pos = panorama.getPosition();
     if (!pos) return;
     const lat = pos.lat();
     const lng = pos.lng();
-    // Only update if we already have a selection (navigating within SV)
+    // Only update display if we already have a selection (navigating within SV)
     if (pendingLat !== null) {
       pendingLat = lat;
       pendingLng = lng;
-      marker.setPosition({ lat, lng });
-      updateCoords(lat, lng);
+      marker.position = { lat, lng };
+      // Update display coords only — do NOT touch confirmedLat/confirmedLng
+      // and do NOT write to btn.dataset (those remain the user's explicit pick)
+      const el = document.getElementById("scout-coords");
+      if (el) el.textContent = `SV: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   });
 
@@ -140,21 +165,20 @@ function initMap(): void {
 
 function setLocation(lat: number, lng: number, source: string): void {
   console.log(`[Scout] Location set from ${source}: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+  // Lock in the confirmed coordinates — only explicit user actions reach here.
+  confirmedLat = lat;
+  confirmedLng = lng;
   pendingLat = lat;
   pendingLng = lng;
 
-  marker.setPosition({ lat, lng });
-  marker.setVisible(true);
+  marker.position = { lat, lng };
+  setMarkerVisible(true);
   panorama.setPosition({ lat, lng });
   panorama.setVisible(true);
   map.panTo({ lat, lng });
 
   updateCoords(lat, lng);
   setGenerateEnabled(true);
-
-  // Store on button element as source of truth for submit
-  const btn = document.getElementById("scout-generate-btn");
-  if (btn) { btn.dataset.lat = String(lat); btn.dataset.lng = String(lng); }
 
   // Check Street View coverage — warn if no imagery at this spot
   clearCoverageWarning();
@@ -192,11 +216,15 @@ function clearCoverageWarning(): void {
   if (el) el.style.display = "none";
 }
 
+function setMarkerVisible(visible: boolean): void {
+  marker.map = visible ? map : null;
+}
+
 function updateCoords(lat: number, lng: number): void {
+  // Shows the user's confirmed (explicitly selected) coordinates.
+  // This is called only from setLocation() — never from position_changed.
   const el = document.getElementById("scout-coords");
-  if (el) el.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  const btn = document.getElementById("scout-generate-btn");
-  if (btn) { btn.dataset.lat = String(lat); btn.dataset.lng = String(lng); }
+  if (el) el.textContent = `Selected: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
 function setGenerateEnabled(enabled: boolean): void {
@@ -224,17 +252,18 @@ function setStatus(msg: string, type: "idle" | "running" | "done" | "error" = "r
 export function onGenerateClick(): void {
   if (activeJobId) return;
 
-  // Read coordinates from button data attributes — the single source of truth
-  const btn = document.getElementById("scout-generate-btn") as HTMLButtonElement | null;
-  const lat = btn?.dataset.lat ? parseFloat(btn.dataset.lat) : pendingLat;
-  const lng = btn?.dataset.lng ? parseFloat(btn.dataset.lng) : pendingLng;
+  // confirmedLat/confirmedLng are the ONLY source of truth for submission.
+  // They are set exclusively by explicit user actions (map click, search,
+  // marker drag) and are never overwritten by panorama position_changed events.
+  const lat = confirmedLat;
+  const lng = confirmedLng;
 
   if (lat === null || lng === null) {
     showError("Click on the map to select a location first.");
     return;
   }
 
-  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng}`);
+  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng} (confirmed)`);
 
   // Show confirmation coords in status
   setStatus(`Starting pipeline for ${lat.toFixed(5)}, ${lng.toFixed(5)}...`, "running");
