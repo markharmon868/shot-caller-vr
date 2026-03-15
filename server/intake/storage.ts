@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { createClient, type Client, type InStatement } from "@libsql/client";
+import type { MastraCompositeStore } from "@mastra/core/storage";
 import { LibSQLStore } from "@mastra/libsql";
 import { imageSize } from "image-size";
 
@@ -90,11 +91,11 @@ export async function createLibSqlClient(): Promise<Client> {
   return createClient({ url: serverConfig.mastraDbUrl });
 }
 
-export function createMastraStore(): LibSQLStore {
+export function createMastraStore(): MastraCompositeStore {
   return new LibSQLStore({
     id: serverConfig.mastraStoreId,
     url: serverConfig.mastraDbUrl,
-  });
+  }) as unknown as MastraCompositeStore;
 }
 
 export async function ensureIntakeTables(client: Client): Promise<void> {

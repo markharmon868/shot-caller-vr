@@ -27,14 +27,44 @@ let activeJobId: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 // Coordinates set by explicit user action (map click, search, marker drag).
-// These are the only coordinates ever sent to the pipeline.
+// These remain the fallback submission coordinates until the latest Street View
+// selection resolves to a fresh pano.
 let confirmedLat: number | null = null;
 let confirmedLng: number | null = null;
 
-// Mirrors the current Street View panorama position (may differ from confirmed
-// due to Google snapping). Used only for display, never for submission.
+// Mirrors the current Street View panorama position for display.
 let pendingLat: number | null = null;
 let pendingLng: number | null = null;
+
+// Tracks the latest explicit selection so a newly chosen location cannot submit
+// the previously visible pano before Google finishes resolving the update.
+let latestSelectionToken = 0;
+let coverageReadyToken: number | null = null;
+let resolvedPanoToken: number | null = null;
+let resolvedPanoLat: number | null = null;
+let resolvedPanoLng: number | null = null;
+
+function getSubmissionLocation(): { lat: number; lng: number; source: "street_view" | "selection" } | null {
+  if (
+    resolvedPanoToken !== null &&
+    resolvedPanoToken === latestSelectionToken &&
+    resolvedPanoLat !== null &&
+    resolvedPanoLng !== null
+  ) {
+    return {
+      lat: resolvedPanoLat,
+      lng: resolvedPanoLng,
+      source: "street_view",
+    };
+  }
+
+  if (confirmedLat === null || confirmedLng === null) return null;
+  return {
+    lat: confirmedLat,
+    lng: confirmedLng,
+    source: "selection",
+  };
+}
 
 export function startScout(): void {
   const apiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "";
@@ -137,24 +167,26 @@ async function initMap(): Promise<void> {
     setLocation(e.latLng.lat(), e.latLng.lng(), "marker_drag");
   });
 
-  // Street view navigation → sync marker position only.
-  // Do NOT update confirmedLat/confirmedLng here — Google may snap the panorama
-  // to a nearby pano (different coords) when coverage is sparse, which would
-  // silently overwrite the user's explicit map selection.
+  // Street View navigation updates the marker display. Once the latest
+  // selection has resolved, this also becomes the live submission pano.
   panorama.addListener("position_changed", () => {
     const pos = panorama.getPosition();
     if (!pos) return;
     const lat = pos.lat();
     const lng = pos.lng();
-    // Only update display if we already have a selection (navigating within SV)
     if (pendingLat !== null) {
       pendingLat = lat;
       pendingLng = lng;
       marker.position = { lat, lng };
-      // Update display coords only — do NOT touch confirmedLat/confirmedLng
-      // and do NOT write to btn.dataset (those remain the user's explicit pick)
       const el = document.getElementById("scout-coords");
       if (el) el.textContent = `SV: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      if (coverageReadyToken !== null && coverageReadyToken === latestSelectionToken) {
+        resolvedPanoToken = latestSelectionToken;
+        resolvedPanoLat = lat;
+        resolvedPanoLng = lng;
+        setGenerateEnabled(true);
+        setStatus(`Ready to generate from ${lat.toFixed(5)}, ${lng.toFixed(5)}.`, "idle");
+      }
     }
   });
 
@@ -163,11 +195,18 @@ async function initMap(): Promise<void> {
 
 function setLocation(lat: number, lng: number, source: string): void {
   console.log(`[Scout] Location set from ${source}: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-  // Lock in the confirmed coordinates — only explicit user actions reach here.
+  const selectionToken = ++latestSelectionToken;
+
+  // Lock in the explicit selection immediately, but do not trust the pano
+  // until Google resolves it for this selection token.
   confirmedLat = lat;
   confirmedLng = lng;
   pendingLat = lat;
   pendingLng = lng;
+  coverageReadyToken = null;
+  resolvedPanoToken = null;
+  resolvedPanoLat = null;
+  resolvedPanoLng = null;
 
   marker.position = { lat, lng };
   setMarkerVisible(true);
@@ -176,16 +215,31 @@ function setLocation(lat: number, lng: number, source: string): void {
   map.panTo({ lat, lng });
 
   updateCoords(lat, lng);
-  setGenerateEnabled(true);
+  setGenerateEnabled(false);
+  setStatus(`Resolving Street View for ${lat.toFixed(5)}, ${lng.toFixed(5)}...`, "running");
 
   // Check Street View coverage — warn if no imagery at this spot
   clearCoverageWarning();
   if (svService) {
     svService.getPanorama(
       { location: { lat, lng }, radius: 80, source: window.google.maps.StreetViewSource.OUTDOOR },
-      (_data: unknown, status: string) => {
+      (data: google.maps.StreetViewPanoramaData | null, status: string) => {
+        if (selectionToken !== latestSelectionToken) return;
         if (status !== "OK") {
           showCoverageWarning();
+          setStatus("No Street View imagery at this location. Pick a nearby road or path.", "error");
+          setGenerateEnabled(false);
+          return;
+        }
+
+        coverageReadyToken = selectionToken;
+        const location = data?.location?.latLng;
+        if (location) {
+          resolvedPanoToken = selectionToken;
+          resolvedPanoLat = location.lat();
+          resolvedPanoLng = location.lng();
+          setGenerateEnabled(true);
+          setStatus(`Ready to generate from ${resolvedPanoLat.toFixed(5)}, ${resolvedPanoLng.toFixed(5)}.`, "idle");
         }
       }
     );
@@ -250,20 +304,15 @@ function setStatus(msg: string, type: "idle" | "running" | "done" | "error" = "r
 export function onGenerateClick(): void {
   if (activeJobId) return;
 
-  // confirmedLat/confirmedLng are the ONLY source of truth for submission.
-  // They are set exclusively by explicit user actions (map click, search,
-  // marker drag) and are never overwritten by panorama position_changed events.
-  const lat = confirmedLat;
-  const lng = confirmedLng;
-
-  if (lat === null || lng === null) {
+  const submission = getSubmissionLocation();
+  if (!submission) {
     showError("Click on the map to select a location first.");
     return;
   }
 
-  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng} (confirmed)`);
+  const { lat, lng, source } = submission;
+  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng} (source=${source})`);
 
-  // Show confirmation coords in status
   setStatus(`Starting pipeline for ${lat.toFixed(5)}, ${lng.toFixed(5)}...`, "running");
   setGenerateEnabled(false);
 
@@ -316,19 +365,23 @@ function pollStatus(jobId: string): void {
 }
 
 function showDoneState(job: PipelineJob): void {
-  const panel = document.getElementById("scout-done-panel");
-  if (!panel) return;
   const sceneId = job.sceneId ?? job.id.slice(0, 8).toUpperCase();
   const editorUrl = `/?mode=editor&scene=${sceneId}&splat=./splats/${job.splatFilename}`;
-  panel.innerHTML = `
-    <p class="scout-done-label">Scene ready!</p>
-    <a class="scout-open-btn" href="${editorUrl}">Open in Editor →</a>
-    ${job.marbleViewerUrl ? `<a class="scout-marble-link" href="${job.marbleViewerUrl}" target="_blank">View in Marble ↗</a>` : ""}
-  `;
-  panel.style.display = "flex";
+
+  const panel = document.getElementById("scout-done-panel");
+  if (panel) {
+    panel.innerHTML = `
+      <p class="scout-done-label">Scene ready! Redirecting to the editor...</p>
+      <a class="scout-open-btn" href="${editorUrl}">Open in Editor →</a>
+      ${job.marbleViewerUrl ? `<a class="scout-marble-link" href="${job.marbleViewerUrl}" target="_blank">View in Marble ↗</a>` : ""}
+    `;
+    panel.style.display = "flex";
+  }
+
   activeJobId = null;
   setGenerateEnabled(true);
   loadRecentJobs();
+  window.location.assign(editorUrl);
 }
 
 function loadRecentJobs(): void {
