@@ -155,6 +155,7 @@ export class XrReviewApp {
     // no-op: XR mode reads issues dynamically
   }
 
+
   async enterOrExitXR(): Promise<void> {
     if (this.world.visibilityState.value === VisibilityState.NonImmersive) {
       await this.world.launchXR();

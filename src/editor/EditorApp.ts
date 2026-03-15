@@ -12,6 +12,8 @@ import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
 import { PropsElement } from "./elements/PropsElement.js";
 import { GltfElement } from "./elements/GltfElement.js";
+import { toast } from "./toast.js";
+import { exportShotListPDF } from "./exportPDF.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -31,6 +33,7 @@ class EditorApp {
   private reviewIndex = 0;
   private orbitTarget = new THREE.Vector3();    // lerp target for orbit controls
   private orbitLerping = false;
+  private demoInterval: ReturnType<typeof setInterval> | null = null;
 
   private spark!: SparkRenderer;
   private splat: SplatMesh | null = null;
@@ -42,8 +45,9 @@ class EditorApp {
 
   // DOM elements
   private container!: HTMLElement;
-  private sidebar!: HTMLElement;
   private statusBar!: HTMLElement;
+  private statusMsg!: HTMLElement;
+  private elementCountEl!: HTMLElement;
   private loadingOverlay!: HTMLElement;
   private loadingText!: HTMLElement;
   private propertiesSection!: HTMLElement;
@@ -52,15 +56,16 @@ class EditorApp {
 
   init(): void {
     this.container = document.getElementById("scene-container")!;
-    this.sidebar = document.getElementById("editor-sidebar")!;
     this.statusBar = document.getElementById("status-bar")!;
+    this.statusMsg = document.getElementById("status-msg")!;
+    this.elementCountEl = document.getElementById("element-count")!;
     this.loadingOverlay = document.getElementById("loading-overlay")!;
     this.loadingText = document.getElementById("loading-text")!;
     this.propertiesSection = document.getElementById("properties-section")!;
     this.propertiesPanel = document.getElementById("properties-panel")!;
     this.keyboardHint = document.getElementById("keyboard-hint")!;
 
-    this.sidebar.classList.add("visible");
+    document.getElementById("app")!.classList.add("mode-editor");
     this.keyboardHint.classList.add("visible");
 
     this.initRenderer();
@@ -92,12 +97,44 @@ class EditorApp {
         }
       }
     }
+    this.updateElementCount();
 
     this.initGltfLibrary();
     this.initDragDrop();
+    this.wireSceneTitle();
+    this.startDemoModeIfRequested();
 
     window.addEventListener("resize", this.onResize);
+    this.onResize(); // Initial layout (responsive collapse)
     this.animate();
+  }
+
+  /** When ?demo=1, auto-enter review and advance shots every 4s (for hackathon presentation). */
+  private startDemoModeIfRequested(): void {
+    if (!new URLSearchParams(window.location.search).has("demo")) return;
+    // Defer so scene/placements are ready; check again after a short delay for restored scenes
+    setTimeout(() => {
+      const shots = this.getReviewShots();
+      if (shots.length === 0) return;
+      console.log("🎬 Demo mode — auto-advancing shots every 4s");
+      this.enterReviewMode();
+      let idx = 0;
+      this.demoInterval = setInterval(() => {
+        idx = (idx + 1) % shots.length;
+        this.reviewIndex = idx;
+        this.applyReviewFrame();
+        if (idx === 0) {
+          clearInterval(this.demoInterval!);
+          this.demoInterval = null;
+        }
+      }, 4000);
+    }, 1500);
+  }
+
+  private getReviewShots(): CameraElement[] {
+    return Array.from(this.state.elements.values()).filter(
+      (el): el is CameraElement => el instanceof CameraElement && el.shotNumber != null
+    );
   }
 
   // ── Renderer + Scene setup ─────────────────────────────────────────────────
@@ -196,8 +233,13 @@ class EditorApp {
     this.placer.attach(this.renderer.domElement);
 
     this.placer.onSelect = (el) => this.onElementSelected(el);
-    this.placer.onPlace = (el) => console.log("[Editor] Placed:", el.name);
-    this.placer.onDelete = (_el) => this.onElementSelected(null);
+    this.placer.onPlace = () => {
+      this.updateElementCount();
+    };
+    this.placer.onDelete = () => {
+      this.onElementSelected(null);
+      this.updateElementCount();
+    };
     this.placer.onStatusChange = (msg) => this.setStatus(msg);
 
     // Add TransformControls to scene now that both scene and placer exist
@@ -261,15 +303,41 @@ class EditorApp {
 
     // Save / Export
     document.getElementById("save-scene-btn")!.addEventListener("click", () => {
-      this.state.saveToKV();
-      this.setStatus(`Scene saved`);
+      if (!this.state.saveLocal()) {
+        toast("Scene too large — try removing some elements", "error");
+        return;
+      }
+      void this.state.saveToKV();
+      toast("Scene saved", "success");
+      this.setStatus("Scene saved");
     });
     document.getElementById("preview-vr-btn")!.addEventListener("click", () => {
-      this.state.saveToKV();
+      if (!this.state.saveLocal()) {
+        toast("Scene too large for VR handoff — try removing some elements", "error");
+        return;
+      }
+      void this.state.saveToKV();
       window.location.href = `/?mode=vr&scene=${this.state.id}`;
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();
+      toast("Scene exported as JSON", "success");
+    });
+    document.getElementById("export-pdf-btn")!.addEventListener("click", () => {
+      exportShotListPDF(this.state.toJSON(), this.state.title);
+      toast("Shot list PDF exported", "success");
+    });
+    document.getElementById("clear-scene-btn")!.addEventListener("click", () => {
+      if (this.state.elements.size === 0) {
+        toast("Scene is already empty", "info");
+        return;
+      }
+      if (!confirm("Clear all elements from the scene?")) return;
+      this.state.clearAll();
+      this.placer.selectElement(null);
+      this.updateElementCount();
+      toast("Scene cleared", "success");
+      this.setStatus("Scene cleared");
     });
     document.getElementById("clear-elements-btn")!.addEventListener("click", () => {
       if (!confirm("Clear all elements from this scene? This cannot be undone.")) return;
@@ -290,9 +358,11 @@ class EditorApp {
     document.getElementById("delete-element-btn")!.addEventListener("click", () => {
       const el = this.placer.selected;
       if (el) {
+        const name = el.name;
         this.placer.selectElement(null);
         this.state.removeElement(el);
-        this.setStatus(`Deleted ${el.name}`);
+        toast(`Deleted ${name}`, "info");
+        this.setStatus(`Deleted ${name}`);
       }
     });
 
@@ -301,6 +371,14 @@ class EditorApp {
       btn.addEventListener("click", () => {
         this.setGizmoMode(btn.dataset.gizmo as "translate" | "rotate" | "scale");
       });
+    });
+
+    // Panel toggles (responsive collapse)
+    document.getElementById("left-panel-toggle")?.addEventListener("click", () => {
+      document.getElementById("left-panel")?.classList.toggle("collapsed");
+    });
+    document.getElementById("right-panel-toggle")?.addEventListener("click", () => {
+      document.getElementById("right-panel")?.classList.toggle("collapsed");
     });
 
     // Sequence mode
@@ -323,10 +401,14 @@ class EditorApp {
     window.addEventListener("keydown", (e) => {
       if (e.target instanceof HTMLInputElement) return; // don't steal input focus
 
-      // Arrow keys step through shots in review mode
+      // Arrow keys / Space step through shots in review mode
       if (this.reviewMode) {
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") { this.stepReview(1); return; }
-        if (e.key === "ArrowLeft"  || e.key === "ArrowUp")   { this.stepReview(-1); return; }
+        if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
+          e.preventDefault();
+          this.stepReview(1);
+          return;
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") { this.stepReview(-1); return; }
         if (e.key === "Escape") { this.exitReviewMode(); return; }
       }
 
@@ -427,6 +509,21 @@ class EditorApp {
 
   // ── Properties panel ───────────────────────────────────────────────────────
 
+  private wireSceneTitle(): void {
+    const el = document.getElementById("scene-title");
+    if (!el) return;
+    el.textContent = this.state.title;
+    el.addEventListener("blur", () => {
+      this.state.setTitle(el.textContent?.trim() || "Untitled Scene");
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        el.blur();
+      }
+    });
+  }
+
   private toggleSequenceMode(): void {
     this.sequenceMode = !this.sequenceMode;
     const btn = document.getElementById("sequence-mode-btn")!;
@@ -436,6 +533,7 @@ class EditorApp {
       hint.style.display = "block";
       this.placer.cancelTool();
       this.setStatus("Sequence Mode — click cameras in order to assign shot numbers");
+      toast("Sequence Mode — click cameras to assign shot numbers", "info");
     } else {
       btn.classList.remove("active");
       hint.style.display = "none";
@@ -448,6 +546,7 @@ class EditorApp {
     for (const el of this.state.elements.values()) {
       if (el instanceof CameraElement) el.setShotNumber(null);
     }
+    toast("Shot sequence cleared", "info");
     this.setStatus("Shot sequence cleared");
   }
 
@@ -470,6 +569,7 @@ class EditorApp {
     // Sequence mode: clicking a camera assigns the next shot number
     if (this.sequenceMode && el instanceof CameraElement) {
       el.setShotNumber(this.nextShotNumber++);
+      toast(`Shot ${el.shotNumber} → ${el.name}`, "success");
       this.setStatus(`Shot ${el.shotNumber} assigned to ${el.name}`);
     }
 
@@ -599,6 +699,10 @@ class EditorApp {
 
   exitReviewMode(): void {
     this.reviewMode = false;
+    if (this.demoInterval) {
+      clearInterval(this.demoInterval);
+      this.demoInterval = null;
+    }
     document.getElementById("shot-review-panel")!.style.display = "none";
     document.getElementById("review-mode-btn")!.classList.remove("active");
     (document.getElementById("sequence-mode-btn") as HTMLButtonElement).disabled = false;
@@ -641,6 +745,11 @@ class EditorApp {
     document.getElementById("shot-review-number")!.textContent = `Shot ${cam.shotNumber} of ${total}`;
     document.getElementById("shot-review-type")!.textContent = `${cam.shotType || "—"}${groupLabel}`;
     document.getElementById("shot-review-label")!.textContent = cam.shotLabel || cam.name;
+    const posEl = document.getElementById("shot-review-position");
+    if (posEl) {
+      const p = cam.position;
+      posEl.textContent = `X: ${p.x.toFixed(1)}  Y: ${p.y.toFixed(1)}  Z: ${p.z.toFixed(1)}`;
+    }
     document.getElementById("shot-prev-btn")!.toggleAttribute("disabled", this.reviewIndex === 0);
     document.getElementById("shot-next-btn")!.toggleAttribute("disabled", this.reviewIndex === total - 1);
 
@@ -673,7 +782,8 @@ class EditorApp {
   }
 
   async loadSplat(url: string): Promise<void> {
-    this.showLoading(`Loading scene…`);
+    const name = url.split("/").pop() ?? url;
+    this.showLoading(`Loading scene…\n${name}`);
     this.state.setSplatUrl(url);
 
     try {
@@ -712,10 +822,12 @@ class EditorApp {
       }
 
       this.setStatus(`Scene loaded — start placing elements`);
-      console.log("[Editor] Loaded scene:", url);
+      this.updateElementCount();
+      toast(`Loaded ${name}`, "success");
     } catch (err) {
       console.error("[Editor] Failed to load scene:", err);
       this.setStatus(`Failed to load scene — check the URL`);
+      toast("Failed to load scene — check the URL", "error");
     } finally {
       this.hideLoading();
     }
@@ -760,16 +872,22 @@ class EditorApp {
   // ── Loading overlay ────────────────────────────────────────────────────────
 
   showLoading(msg: string): void {
-    this.loadingText.textContent = msg;
-    this.loadingOverlay.classList.add("visible");
+    if (this.loadingText) this.loadingText.textContent = msg;
+    this.loadingOverlay?.classList.add("visible");
   }
 
   hideLoading(): void {
-    this.loadingOverlay.classList.remove("visible");
+    this.loadingOverlay?.classList.remove("visible");
   }
 
   setStatus(msg: string): void {
-    this.statusBar.textContent = msg;
+    if (this.statusMsg) this.statusMsg.textContent = msg;
+  }
+
+  private updateElementCount(): void {
+    if (!this.elementCountEl) return;
+    const n = this.state.elements.size;
+    this.elementCountEl.textContent = n ? ` · ${n} element${n === 1 ? "" : "s"}` : "";
   }
 
   // ── Render loop ────────────────────────────────────────────────────────────
@@ -799,13 +917,25 @@ class EditorApp {
     this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    // Responsive: collapse panels on narrow viewports
+    const narrow = window.innerWidth < 1200;
+    document.getElementById("left-panel")?.classList.toggle("collapsed", narrow);
+    document.getElementById("right-panel")?.classList.toggle("collapsed", narrow);
   };
 
   dispose(): void {
     cancelAnimationFrame(this.rafId);
     window.removeEventListener("resize", this.onResize);
-    this.placer.detach(this.renderer.domElement);
-    this.renderer.dispose();
+    if (this.demoInterval) {
+      clearInterval(this.demoInterval);
+      this.demoInterval = null;
+    }
+    try {
+      this.placer.detach(this.renderer.domElement);
+      this.renderer.dispose();
+    } catch (e) {
+      console.warn("[Editor] Dispose cleanup:", e);
+    }
   }
 }
 
