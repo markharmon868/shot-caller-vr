@@ -43,7 +43,14 @@ function sanitizeLocation(input: string): string {
 
 function buildPrompt(location: string, direction: string): string {
   const safe = sanitizeLocation(location);
-  return `Clean, photorealistic photograph of ${safe} from the ${direction}, no pedestrians, no vehicles, no text overlays, film location scouting reference, 16:9 aspect ratio, natural lighting, high detail`;
+  return [
+    `Photorealistic architectural photograph of ${safe}, viewed from the ${direction}.`,
+    `The scene must be completely empty of people, vehicles, and moving objects.`,
+    `Capture the full structure and surrounding environment with consistent golden-hour lighting.`,
+    `All four cardinal views of this location must share identical lighting, weather (clear sky), and time of day.`,
+    `Sharp focus throughout, high dynamic range, 16:9 aspect ratio, professional location scouting reference photo.`,
+    `Ensure architectural details, textures, and spatial relationships are accurate and consistent across views.`,
+  ].join(" ");
 }
 
 /**

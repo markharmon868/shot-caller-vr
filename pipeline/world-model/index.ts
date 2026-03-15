@@ -29,6 +29,10 @@ export interface WorldModelOptions {
   imagePaths?: string[];
   /** Model tier: mini (~30s, 250 credits) or plus (~5min, 1600 credits). */
   model?: "mini" | "plus";
+  /** Enable reconstruct_images for real-world scene reconstruction (Auto Layout). */
+  reconstruct?: boolean;
+  /** Text prompt to guide generation (location description for better context). */
+  textPrompt?: string;
 }
 
 export interface WorldModelResult {
@@ -135,24 +139,32 @@ async function uploadImage(imagePath: string): Promise<string> {
 
 /**
  * Generate world from multiple images with azimuth angles.
+ * @param reconstruct Enable Auto Layout reconstruction mode for real-world scenes
+ * @param textPrompt Optional text prompt for better scene context
  */
 async function generateMultiImage(
   mediaAssetIds: { id: string; azimuth: number }[],
-  modelName: string
+  modelName: string,
+  reconstruct = false,
+  textPrompt?: string,
 ): Promise<string> {
-  const body = {
-    model: modelName,
-    world_prompt: {
-      type: "multi-image",
-      multi_image_prompt: mediaAssetIds.map(({ id, azimuth }) => ({
-        azimuth,
-        content: {
-          source: "media_asset",
-          media_asset_id: id,
-        },
-      })),
-    },
+  const worldPrompt: Record<string, unknown> = {
+    type: "multi-image",
+    multi_image_prompt: mediaAssetIds.map(({ id, azimuth }) => ({
+      azimuth,
+      content: {
+        source: "media_asset",
+        media_asset_id: id,
+      },
+    })),
   };
+  if (reconstruct) {
+    worldPrompt.reconstruct_images = true;
+  }
+  if (textPrompt) {
+    worldPrompt.text_prompt = textPrompt;
+  }
+  const body = { model: modelName, world_prompt: worldPrompt };
 
   const res = await fetch(`${MARBLE_BASE}/worlds:generate`, {
     method: "POST",
@@ -399,7 +411,7 @@ export async function generateWorldModel(
     );
 
     const opId = isMulti
-      ? await generateMultiImage(mediaAssets, modelName)
+      ? await generateMultiImage(mediaAssets, modelName, options.reconstruct ?? false, options.textPrompt)
       : await generateSingleImage(mediaAssets[0].id, modelName);
 
     const worldId = await pollOperation(opId, maxWaitMs);
