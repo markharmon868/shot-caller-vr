@@ -80,7 +80,7 @@ class EditorApp {
     // Restore saved scene first so we get the saved splatUrl if any
     const restored = this.state.loadLocal();
 
-    const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
+    const DEFAULT_SPLAT = "./splats/scene-orlando-v2.spz";
     const params = new URLSearchParams(window.location.search);
     const spzUrl =
       params.get("splat") ??
@@ -98,6 +98,9 @@ class EditorApp {
           el.load().catch(() => {});
         }
       }
+    } else {
+      // No saved state — fetch the pre-populated default scene
+      this.loadDefaultScene();
     }
     this.updateElementCount();
 
@@ -865,6 +868,30 @@ class EditorApp {
   }
 
   // ── Splat / Panorama loading ──────────────────────────────────────────────
+
+  /** Fetch and apply the pre-populated default scene (elements + splat offset). */
+  private async loadDefaultScene(): Promise<void> {
+    try {
+      const sceneId = this.state.id;
+      const res = await fetch(`/scenes/${sceneId}.default.json`);
+      if (!res.ok) return;
+      const data = await res.json();
+      this.state.loadFromJSON(data);
+      // Re-load GLTF elements
+      for (const el of this.state.elements.values()) {
+        if (el instanceof GltfElement && el.url) {
+          el.load().catch(() => {});
+        }
+      }
+      // Apply the saved splat offset
+      this.applySplatOffset();
+      this.syncOffsetSliders();
+      this.updateElementCount();
+      this.setStatus(`Default scene loaded — ${this.state.elements.size} element(s)`);
+    } catch {
+      // No default scene available — start empty
+    }
+  }
 
   private isImageUrl(url: string): boolean {
     return /\.(jpe?g|png|webp)$/i.test(url.split("?")[0]);

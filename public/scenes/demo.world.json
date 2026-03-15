@@ -2,8 +2,8 @@
   "sceneId": "demo",
   "version": 1,
   "unit": "meters",
-  "splatUrl": "/splats/sensai-lod.spz",
-  "colliderUrl": "builtin://floor",
+  "splatUrl": "/splats/scene-orlando-v2.spz",
+  "colliderUrl": "/splats/scene-orlando-v2-collider.glb",
   "assetCatalogUrl": "/scenes/demo.assets.json",
   "worldBounds": {
     "min": [

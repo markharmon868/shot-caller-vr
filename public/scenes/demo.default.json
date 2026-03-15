@@ -1,0 +1,248 @@
+{
+  "id": "demo",
+  "title": "Untitled Scene",
+  "splatUrl": "./splats/scene-orlando-v2.spz",
+  "splatOffset": [
+    0,
+    -1.8,
+    0
+  ],
+  "elements": [
+    {
+      "id": "b50c75c1-1293-439f-8bf1-9c64717d8f32",
+      "type": "gltf",
+      "name": "Pontiac Aztek (Walter's Car)",
+      "position": [
+        -2.04048859766654,
+        0.6502467111597225,
+        2.168387437927012
+      ],
+      "rotation": [
+        -1.6061791797575815,
+        0.04449799746369817,
+        -0.26785165234936165
+      ],
+      "rotationY": 0.04449799746369817,
+      "scale": [
+        0.7492814886516137,
+        0.7492814886516137,
+        0.7492814886516137
+      ],
+      "properties": {
+        "url": "/models/car-aztek.glb",
+        "fileName": "Pontiac Aztek (Walter's Car)"
+      }
+    },
+    {
+      "id": "d2c56ac9-280a-463a-8635-24fb27fa08a3",
+      "type": "gltf",
+      "name": "Walter White",
+      "position": [
+        -0.8442341822199879,
+        0.6391469221704381,
+        1.384735453745414
+      ],
+      "rotation": [
+        -1.5876317874196282,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "url": "/models/walter.glb",
+        "fileName": "Walter White"
+      }
+    },
+    {
+      "id": "cb0ded7c-aba5-453c-a19e-d640d5bea190",
+      "type": "gltf",
+      "name": "Pizza Box",
+      "position": [
+        -7.130720840220419,
+        0,
+        12.531089850423331
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "url": "/models/pizza-box.glb",
+        "fileName": "Pizza Box"
+      }
+    },
+    {
+      "id": "dda9b297-34a3-4a7e-a5be-3ab36f367007",
+      "type": "gltf",
+      "name": "Pizza Box",
+      "position": [
+        -0.8916089103107514,
+        0,
+        4.161007862355049
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "url": "/models/pizza-box.glb",
+        "fileName": "Pizza Box"
+      }
+    },
+    {
+      "id": "9ccd74ed-486c-4685-bbe7-fc0ad326c00b",
+      "type": "gltf",
+      "name": "Pizza (Whole)",
+      "position": [
+        -1.4922371973560842,
+        2.1306557207670216,
+        3.2509564135921396
+      ],
+      "rotation": [
+        -0.3248077150712121,
+        0.8690643754727119,
+        -0.13441615553043515
+      ],
+      "rotationY": 0.8690643754727119,
+      "scale": [
+        0.1703607182825982,
+        0.1703607182825982,
+        0.1703607182825982
+      ],
+      "properties": {
+        "url": "/models/pizza.glb",
+        "fileName": "Pizza (Whole)"
+      }
+    },
+    {
+      "id": "8CJND2",
+      "type": "camera",
+      "name": "Camera 2",
+      "position": [
+        -0.15090385234688464,
+        0.9023998459827565,
+        0.6177510347434834
+      ],
+      "rotation": [
+        2.9192299439036122,
+        0.6829358391444248,
+        -3.0192567609091783
+      ],
+      "rotationY": 0.6829358391444248,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "focalLength": 35,
+        "aspectRatio": 1.7777777777777777,
+        "fovDistance": 4,
+        "shotNumber": 2,
+        "shotType": "Wide",
+        "shotLabel": "Pizza shot",
+        "setupGroup": "B"
+      }
+    },
+    {
+      "id": "G7CU2G",
+      "type": "camera",
+      "name": "Camera 5",
+      "position": [
+        0.7535638856185458,
+        1.0158420689018755,
+        1.141739023379048
+      ],
+      "rotation": [
+        -3.141592653589793,
+        1.2866860466342978,
+        -3.141592653589793
+      ],
+      "rotationY": 1.2866860466342978,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "focalLength": 35,
+        "aspectRatio": 1.7777777777777777,
+        "fovDistance": 4,
+        "shotNumber": 1,
+        "shotType": "CU",
+        "shotLabel": "1",
+        "setupGroup": "A"
+      }
+    },
+    {
+      "id": "c8b3f99e-2908-4d9f-ad3c-42d8364c3925",
+      "type": "gltf",
+      "name": "Chapman Hybrid II Dolly",
+      "position": [
+        0.847711006493165,
+        0.4827523068360217,
+        2.528783844863927
+      ],
+      "rotation": [
+        0,
+        -1.7406335874684582,
+        0
+      ],
+      "rotationY": -1.7406335874684582,
+      "scale": [
+        0.7072845147267839,
+        0.7072845147267839,
+        0.7072845147267839
+      ],
+      "properties": {
+        "url": "/models/dolly.glb",
+        "fileName": "Chapman Hybrid II Dolly"
+      }
+    },
+    {
+      "id": "d7f0977b-7b85-4cd4-9836-74c06ccd0164",
+      "type": "gltf",
+      "name": "Chapman Hybrid II Dolly",
+      "position": [
+        0.788422607801839,
+        0,
+        27.815492152752082
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "properties": {
+        "url": "/models/dolly.glb",
+        "fileName": "Chapman Hybrid II Dolly"
+      }
+    }
+  ],
+  "savedAt": "2026-03-15T19:46:56.929Z"
+}

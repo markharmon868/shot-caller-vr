@@ -42,7 +42,7 @@ function deduplicateThree(): Plugin {
 export default defineConfig({
   plugins: [
     deduplicateThree(),
-    mkcert(),
+    // mkcert(), // disabled — Cloudflare handles HTTPS
     injectIWER({
       device: "metaQuest3",
       activation: "localhost",
@@ -58,8 +58,10 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: 8081,
-    open: true,
+    port: 8086,
+    strictPort: true,
+    open: false,
+    allowedHosts: ["hackathon.cloudagi.org"],
     proxy: {
       "/api": {
         target: `http://127.0.0.1:${intakeServerPort}`,
