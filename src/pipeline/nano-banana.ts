@@ -210,20 +210,13 @@ export async function dataUrlToFile(
 }
 
 /**
- * Get API key from environment or localStorage
+ * Get API key from localStorage
  */
 export function getNanoBananaApiKey(): string | null {
-  // Try to get from localStorage first (for browser)
+  // Get from localStorage (browser-only application)
   if (typeof window !== "undefined" && window.localStorage) {
     const stored = localStorage.getItem("GOOGLE_API_KEY");
-    if (stored) {
-      return stored;
-    }
-  }
-
-  // Fallback to environment variable (for server-side)
-  if (typeof process !== "undefined" && process.env) {
-    return process.env.GOOGLE_API_KEY || null;
+    return stored || null;
   }
 
   return null;

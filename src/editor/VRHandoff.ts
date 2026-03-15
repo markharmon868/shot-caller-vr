@@ -37,13 +37,14 @@ export async function launchVRPreview(
   }
 
   // Step 2: Save scene with dramatic UI feedback
-  const saved = state.saveLocal();
-  if (!saved) {
+  try {
+    state.saveLocal();
+    toast("Scene saved", "success", 1000);
+  } catch (error) {
     toast("Failed to save scene before VR handoff", "error");
+    console.error("Save error:", error);
     return;
   }
-  state.saveBridgeElements();
-  toast("Scene saved", "success", 1000);
 
   // Step 3: Build anticipation — brief countdown before navigating
   const btn = document.getElementById("btn-vr") as HTMLButtonElement | null;

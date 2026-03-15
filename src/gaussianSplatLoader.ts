@@ -194,10 +194,15 @@ function createProxyMesh(asset: AssetCatalogEntry, element: SceneElement): THREE
 }
 
 function setTransform(target: THREE.Object3D, element: SceneElement, asset: AssetCatalogEntry): void {
-  target.position.set(...element.transform.position);
-  target.rotation.set(...element.transform.rotation);
-  target.scale.set(...element.transform.scale);
-  target.scale.multiply(new THREE.Vector3(...asset.defaultScale));
+  const pos = element.transform.position as [number, number, number];
+  const rot = element.transform.rotation as [number, number, number];
+  const scl = element.transform.scale as [number, number, number];
+  const defScale = asset.defaultScale as [number, number, number];
+
+  target.position.set(...pos);
+  target.rotation.set(...rot);
+  target.scale.set(...scl);
+  target.scale.multiply(new THREE.Vector3(...defScale));
 }
 
 function patchCameraClone(camera: THREE.Camera): void {
@@ -218,7 +223,8 @@ function createIssueMarker(issue: ReviewIssue): THREE.Object3D {
     new THREE.SphereGeometry(0.08, 16, 16),
     new THREE.MeshBasicMaterial({ color: issue.status === "open" ? 0xef4444 : 0x22c55e }),
   );
-  sphere.position.set(...issue.reviewPose.position);
+  const issuePos = issue.reviewPose.position as [number, number, number];
+  sphere.position.set(...issuePos);
   group.add(sphere);
   const label = createLabelSprite(issue.note.slice(0, 32), "#ef4444");
   label.position.copy(sphere.position).add(new THREE.Vector3(0, 0.45, 0));

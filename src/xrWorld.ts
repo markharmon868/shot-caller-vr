@@ -1,6 +1,10 @@
 // XR World — IWSDK bootstrap for PICO VR walkthrough (Mode 2)
 // This runs when the app is opened in a WebXR-capable browser (PICO headset).
 // Desktop users get the Web3D planning editor instead (see EditorApp.ts).
+//
+// NOTE: This file is currently UNUSED - the active XR mode uses xrReviewApp.ts
+// This represents an earlier implementation and is kept for reference.
+// TODO: Remove or integrate with current architecture.
 
 import * as THREE from "three";
 import {
@@ -17,7 +21,7 @@ import {
   World,
 } from "@iwsdk/core";
 import { PanelSystem } from "./uiPanel.js";
-import { GaussianSplatLoader, GaussianSplatLoaderSystem } from "./gaussianSplatLoader.js";
+// import { GaussianSplatLoader, GaussianSplatLoaderSystem } from "./gaussianSplatLoader.js";
 import { spawnHologramSphere } from "./interactableExample.js";
 
 export function startXRWorld(): void {
@@ -44,25 +48,26 @@ export function startXRWorld(): void {
       world.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
 
       world
-        .registerSystem(PanelSystem)
-        .registerSystem(GaussianSplatLoaderSystem);
+        .registerSystem(PanelSystem);
+        // .registerSystem(GaussianSplatLoaderSystem); // DISABLED - see file header
 
       // Gaussian Splat — ?splat= param lets Teammate 1 pass the generated .spz URL
-      const splatUrl =
-        new URLSearchParams(window.location.search).get("splat") ??
-        "./splats/sensai.spz";
-      const splatEntity = world.createTransformEntity();
-      splatEntity.addComponent(GaussianSplatLoader, { splatUrl });
+      // DISABLED - GaussianSplatLoader/GaussianSplatLoaderSystem no longer exist
+      // const splatUrl =
+      //   new URLSearchParams(window.location.search).get("splat") ??
+      //   "./splats/sensai.spz";
+      // const splatEntity = world.createTransformEntity();
+      // splatEntity.addComponent(GaussianSplatLoader, { splatUrl });
 
-      const splatSystem = world.getSystem(GaussianSplatLoaderSystem)!;
+      // const splatSystem = world.getSystem(GaussianSplatLoaderSystem)!;
 
-      world.visibilityState.subscribe((state) => {
-        if (state !== VisibilityState.NonImmersive) {
-          splatSystem.replayAnimation(splatEntity).catch((err) => {
-            console.error("[XRWorld] Failed to replay splat animation:", err);
-          });
-        }
-      });
+      // world.visibilityState.subscribe((state) => {
+      //   if (state !== VisibilityState.NonImmersive) {
+      //     splatSystem.replayAnimation(splatEntity).catch((err: any) => {
+      //       console.error("[XRWorld] Failed to replay splat animation:", err);
+      //     });
+      //   }
+      // });
 
       // Invisible floor for locomotion
       const floorGeometry = new PlaneGeometry(100, 100);
