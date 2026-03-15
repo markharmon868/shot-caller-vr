@@ -127,6 +127,28 @@ export class XrReviewApp {
     return Boolean(this.loader.getCollider());
   }
 
+  /** Sync review issues from bundle to loader (ViewerApp compatibility). */
+  syncIssues(_bundle?: import("./contracts/stageReview.js").SceneBundle): void {
+    // XrReviewApp loads from bundle at init; no live sync needed for current flow
+  }
+
+  getFocusedElementLabel(): string | null {
+    return null;
+  }
+
+  getFocusedElementId(): string | null {
+    return null;
+  }
+
+  getViewerPose(): import("./contracts/stageReview.js").ReviewPose {
+    const pos = this.world.camera.position;
+    const rot = this.world.camera.rotation;
+    return {
+      position: [pos.x, pos.y, pos.z],
+      rotation: [rot.x, rot.y, rot.z],
+    };
+  }
+
   async enterOrExitXR(): Promise<void> {
     if (this.world.visibilityState.value === VisibilityState.NonImmersive) {
       await this.world.launchXR();

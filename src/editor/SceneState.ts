@@ -9,6 +9,7 @@ import { PropsElement } from "./elements/PropsElement.js";
 
 export interface SceneData {
   id: string;
+  title?: string;
   splatUrl: string;
   elements: ElementData[];
   savedAt: string;
@@ -61,6 +62,7 @@ export function createElement(type: string): ProductionElement {
  */
 export class SceneState {
   private sceneId: string;
+  private sceneTitle = "Untitled Scene";
   private splatUrl = "";
   readonly elements = new Map<string, ProductionElement>();
 
@@ -72,6 +74,8 @@ export class SceneState {
   }
 
   get id(): string { return this.sceneId; }
+  get title(): string { return this.sceneTitle; }
+  setTitle(t: string): void { this.sceneTitle = t || "Untitled Scene"; }
 
   setSplatUrl(url: string): void { this.splatUrl = url; }
   getSplatUrl(): string { return this.splatUrl; }
@@ -92,6 +96,7 @@ export class SceneState {
   toJSON(): SceneData {
     return {
       id: this.sceneId,
+      title: this.sceneTitle,
       splatUrl: this.splatUrl,
       elements: Array.from(this.elements.values()).map((el) => el.serialize()),
       savedAt: new Date().toISOString(),
@@ -106,9 +111,10 @@ export class SceneState {
     }
     this.elements.clear();
     typeCounts["camera"] = typeCounts["light"] = typeCounts["cast_mark"] =
-      typeCounts["crew"] = typeCounts["equipment"] = 0;
+      typeCounts["crew"] = typeCounts["equipment"] = typeCounts["props"] = 0;
 
     this.sceneId = data.id;
+    this.sceneTitle = data.title ?? "Untitled Scene";
     this.splatUrl = data.splatUrl;
 
     for (const ed of data.elements) {
@@ -125,12 +131,26 @@ export class SceneState {
 
   // ── localStorage persistence ───────────────────────────────────────────────
 
-  saveLocal(): void {
+  /** Saves to localStorage. Returns false if payload too large for VR handoff (>900KB). */
+  saveLocal(): boolean {
     const data = this.toJSON();
+    const payload = JSON.stringify(data);
+    if (payload.length > 900_000) {
+      return false;
+    }
     localStorage.setItem(STORAGE_KEY_PREFIX + this.sceneId, JSON.stringify(data));
-    // Bridge: also write elements in SceneBundle format so stage4-xr can read them
     this.saveBridgeElements(data);
-    console.log(`[SceneState] Saved scene ${this.sceneId} to localStorage`);
+    return true;
+  }
+
+  clearAll(): void {
+    for (const el of this.elements.values()) {
+      this.scene.remove(el.group);
+      el.dispose();
+    }
+    this.elements.clear();
+    typeCounts["camera"] = typeCounts["light"] = typeCounts["cast_mark"] =
+      typeCounts["crew"] = typeCounts["equipment"] = typeCounts["props"] = 0;
   }
 
   loadLocal(id?: string): boolean {
@@ -252,9 +272,8 @@ export class SceneState {
       };
     });
 
-    // sceneStore reads from key "shot-caller:elements:{sceneId}"
     localStorage.setItem(
-      `shot-caller:elements:demo`,
+      `shot-caller:elements:${this.sceneId}`,
       JSON.stringify(bundleElements)
     );
   }

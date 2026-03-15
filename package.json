@@ -16,16 +16,17 @@
   "dependencies": {
     "@iwsdk/core": "0.2.2",
     "@sparkjsdev/spark": "github:sparkjsdev/spark#v2.0.0-preview",
+    "jspdf": "^4.2.0",
     "replicate": "^0.34.0",
     "three": "npm:super-three@0.181.0"
   },
   "devDependencies": {
-    "dotenv": "^16.4.7",
-    "tsx": "^4.19.2",
     "@iwsdk/vite-plugin-gltf-optimizer": "0.2.2",
     "@iwsdk/vite-plugin-iwer": "0.2.2",
     "@iwsdk/vite-plugin-uikitml": "0.2.2",
     "@types/three": "^0.181.0",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
     "typescript": "^5.5.0",
     "vite": "^7.1.4",
     "vite-plugin-mkcert": "^1.17.0"

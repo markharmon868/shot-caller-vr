@@ -4,54 +4,116 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Shot Caller — Production Blocking Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet" />
     <style>
+      :root {
+        --bg-primary: #0a0a0a;
+        --bg-surface: #141414;
+        --bg-raised: #1e1e1e;
+        --border: #2a2a2a;
+        --accent: #e8a020;
+        --accent-dim: #7a5410;
+        --text-primary: #f0f0f0;
+        --text-secondary: #808080;
+        --text-muted: #404040;
+        --font-ui: 'IBM Plex Mono', monospace;
+        --font-label: 'IBM Plex Sans Condensed', sans-serif;
+      }
+
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
         margin: 0;
-        background: #0d0221;
-        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--bg-primary);
+        font-family: var(--font-ui);
         overflow: hidden;
       }
 
       #app {
         display: flex;
+        flex-direction: column;
         width: 100vw;
         height: 100vh;
       }
 
-      /* ── Sidebar ───────────────────────────────────────────── */
-      #editor-sidebar {
-        display: none;
-        flex-direction: column;
+      /* ── Editor mode: three-zone layout ───────────────────── */
+      #app.mode-editor #topbar,
+      #app.mode-editor #left-panel,
+      #app.mode-editor #right-panel,
+      #app.mode-editor #bottombar { display: flex; }
+      #app:not(.mode-editor) #topbar,
+      #app:not(.mode-editor) #left-panel,
+      #app:not(.mode-editor) #right-panel,
+      #app:not(.mode-editor) #bottombar { display: none; }
+
+      #topbar {
+        flex-shrink: 0;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 16px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar-left { display: flex; align-items: center; gap: 12px; }
+      .topbar-left .logo { color: var(--accent); font-weight: 700; font-size: 12px; letter-spacing: 1.5px; }
+      #scene-title { color: var(--text-secondary); font-size: 11px; max-width: 140px; padding: 4px 8px; border-radius: 4px; outline: none; }
+      #scene-title:focus { background: var(--bg-raised); color: var(--text-primary); }
+      .topbar-center { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; justify-content: center; }
+      .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+      #editor-main {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      #left-panel {
         width: 220px;
         min-width: 220px;
-        background: #120828;
-        border-right: 1px solid #2d1a4a;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border);
         overflow-y: auto;
-        z-index: 10;
+        flex-direction: column;
       }
-      #editor-sidebar.visible { display: flex; }
-
-      .sidebar-header {
-        padding: 16px 14px 12px;
-        border-bottom: 1px solid #2d1a4a;
-      }
-      .sidebar-header h1 {
-        color: #fbbf24;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 2.5px;
-        text-transform: uppercase;
-      }
-      .sidebar-header p {
-        color: #6b5a8a;
-        font-size: 10px;
-        margin-top: 2px;
+      #right-panel {
+        width: 260px;
+        min-width: 260px;
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border);
+        overflow-y: auto;
+        flex-direction: column;
       }
 
-      .sidebar-section {
+      #bottombar {
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 16px;
+        background: var(--bg-surface);
+        border-top: 1px solid var(--border);
+        font-size: 9px;
+        color: var(--text-muted);
+      }
+      .shortcuts { display: flex; gap: 16px; flex-wrap: wrap; }
+      .shortcut kbd { background: var(--bg-raised); padding: 2px 5px; border-radius: 3px; margin-right: 4px; }
+      .status-count { margin-left: 4px; color: var(--accent); }
+
+      @media (max-width: 1199px) {
+        #left-panel.collapsed { width: 48px; min-width: 48px; }
+        #left-panel.collapsed .panel-section > *:not(.panel-toggle) { display: none; }
+        #right-panel.collapsed { width: 48px; min-width: 48px; }
+        #right-panel.collapsed .panel-section > *:not(.panel-toggle) { display: none; }
+      }
+
+      /* Legacy: editor-sidebar hidden — layout is now three-zone */
+      #editor-sidebar {
+        display: none;
+      }
+
+      .panel-section {
         padding: 10px 12px;
-        border-bottom: 1px solid #1a0d33;
+        border-bottom: 1px solid var(--border);
       }
       .section-title {
         color: #6b5a8a;
@@ -133,9 +195,14 @@
       }
       .tool-btn:hover { background: #2a1a40; color: #d0c0e8; border-color: #3d2a5a; }
       .tool-btn.active {
-        background: #2a1a00;
-        border-color: #fbbf24;
-        color: #fbbf24;
+        background: var(--bg-primary);
+        border-color: var(--accent);
+        color: var(--accent);
+        animation: pulse-border 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-border {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(232, 160, 32, 0.3); }
+        50% { box-shadow: 0 0 0 4px rgba(232, 160, 32, 0.15); }
       }
       .tool-btn .icon { font-size: 16px; line-height: 1; }
       .tool-btn.wide { grid-column: 1 / -1; flex-direction: row; gap: 8px; padding: 7px 12px; }
@@ -163,6 +230,8 @@
       .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
       .btn-danger:hover { background: #2a0a0a; }
       .btn.active { background: #1a0a33; border-color: #a78bfa; color: #a78bfa; }
+      .btn-ghost { background: transparent; border-color: transparent; }
+      .btn-ghost:hover { background: var(--bg-raised); }
 
       /* Properties panel */
       #properties-section { display: none; }
@@ -236,12 +305,12 @@
         z-index: 20;
       }
       #loading-overlay.visible { display: flex; }
-      #loading-text { color: #c4b5d8; font-size: 13px; }
+      #loading-text { font-family: var(--font-ui); color: var(--text-secondary); font-size: 13px; white-space: pre-line; text-align: center; }
       #loading-spinner {
         width: 36px;
         height: 36px;
-        border: 3px solid #2d1a4a;
-        border-top-color: #fbbf24;
+        border: 3px solid var(--border);
+        border-top-color: var(--accent);
         border-radius: 50%;
         animation: spin 0.75s linear infinite;
       }
@@ -372,6 +441,30 @@
       }
       .shot-exit-btn:hover { border-color: #fca5a5; color: #fca5a5; }
 
+      /* Toast notifications */
+      .toast {
+        position: fixed;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        font-family: var(--font-ui);
+        background: var(--bg-raised);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        color: var(--text-primary);
+        font-size: 12px;
+        padding: 10px 20px;
+        border-radius: 6px;
+        opacity: 0;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      }
+      .toast.toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+      .toast.toast-error { border-left-color: #c0392b; }
+      .toast.toast-success { border-left-color: #27ae60; }
+
       /* Keyboard hint */
       #keyboard-hint {
         position: absolute;
@@ -393,93 +486,87 @@
   <body>
     <div id="app">
 
-      <!-- Editor sidebar — shown only in ?mode=editor (default) -->
-      <div id="editor-sidebar">
-        <div class="sidebar-header">
-          <h1>Shot Caller</h1>
-          <p>Production Blocking Tool</p>
+      <!-- Topbar -->
+      <header id="topbar">
+        <div class="topbar-left">
+          <span class="logo">🎬 SHOT CALLER</span>
+          <span id="scene-title" class="scene-title" contenteditable="true" title="Edit scene title">Untitled Scene</span>
         </div>
-
-        <div class="sidebar-section">
-          <div class="section-title">Scene</div>
-          <div class="spz-row">
+        <div class="topbar-center">
+          <div class="spz-row" style="max-width:320px">
             <input id="spz-url-input" type="text" placeholder=".spz URL or paste from pipeline…" />
-          </div>
-          <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Gaussian Scene</button>
-        </div>
-
-        <div class="sidebar-section">
-          <div class="section-title">Place Elements</div>
-          <div class="tool-grid">
-            <button class="tool-btn wide active" data-tool="select">
-              <span class="icon">↖</span> Select / Move
-            </button>
-            <button class="tool-btn" data-tool="camera">
-              <span class="icon">🎥</span> Camera
-            </button>
-            <button class="tool-btn" data-tool="light">
-              <span class="icon">💡</span> Light
-            </button>
-            <button class="tool-btn" data-tool="cast_mark">
-              <span class="icon">✕</span> Cast Mark
-            </button>
-            <button class="tool-btn" data-tool="crew">
-              <span class="icon">🚶</span> Crew
-            </button>
-            <button class="tool-btn" data-tool="equipment">
-              <span class="icon">🎬</span> Equipment
-            </button>
-            <button class="tool-btn" data-tool="props">
-              <span class="icon">📦</span> Prop
-            </button>
+            <button id="load-splat-btn" class="btn btn-primary" style="margin:0;flex-shrink:0">Load</button>
           </div>
         </div>
+        <div class="topbar-right">
+          <button id="preview-vr-btn" class="btn btn-primary" style="margin:0">▶ VR Preview</button>
+        </div>
+      </header>
 
-        <div class="sidebar-section">
-          <div class="section-title">Shot Sequence</div>
-          <button id="sequence-mode-btn" class="btn" style="border-color:#a78bfa;color:#a78bfa;margin-bottom:5px">
-            ◉ Sequence Mode
-          </button>
-          <button id="review-mode-btn" class="btn" style="border-color:#34d399;color:#34d399;margin-bottom:5px">
-            ▶ Review Shots
-          </button>
-          <button id="sequence-reset-btn" class="btn">Clear Sequence</button>
-          <div id="sequence-hint" style="display:none;margin-top:6px;padding:6px 8px;background:#1a0d33;border-radius:4px;border-left:2px solid #a78bfa;color:#a78bfa;font-size:9px;line-height:1.6">
-            Click cameras in shooting order.<br>Each click assigns the next shot #.<br>Click again to re-assign.
+      <!-- Main: Left | Viewport | Right -->
+      <div id="editor-main">
+        <aside id="left-panel">
+          <button type="button" class="panel-toggle btn btn-ghost" id="left-panel-toggle" title="Toggle panel" style="margin:4px 8px;padding:4px;font-size:12px">◀</button>
+          <div class="panel-section">
+            <div class="section-title">Place Elements</div>
+            <div class="tool-grid">
+              <button class="tool-btn wide active" data-tool="select">
+                <span class="icon">↖</span> Select / Move
+              </button>
+              <button class="tool-btn" data-tool="camera">
+                <span class="icon">🎥</span> Camera
+              </button>
+              <button class="tool-btn" data-tool="light">
+                <span class="icon">💡</span> Light
+              </button>
+              <button class="tool-btn" data-tool="cast_mark">
+                <span class="icon">✕</span> Cast Mark
+              </button>
+              <button class="tool-btn" data-tool="crew">
+                <span class="icon">🚶</span> Crew
+              </button>
+              <button class="tool-btn" data-tool="equipment">
+                <span class="icon">🎬</span> Equipment
+              </button>
+              <button class="tool-btn" data-tool="props">
+                <span class="icon">📦</span> Prop
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="sidebar-section" id="properties-section">
-          <div class="section-title">Transform</div>
-          <div class="gizmo-row">
-            <button class="gizmo-btn active" data-gizmo="translate">
-              <span class="icon">⟺</span> Move
-            </button>
-            <button class="gizmo-btn" data-gizmo="rotate">
-              <span class="icon">↻</span> Rotate
-            </button>
-            <button class="gizmo-btn" data-gizmo="scale">
-              <span class="icon">⤡</span> Scale
-            </button>
+          <div class="panel-section">
+            <div class="section-title">Transform</div>
+            <div class="gizmo-row">
+              <button class="gizmo-btn active" data-gizmo="translate">
+                <span class="icon">⟺</span> Move
+              </button>
+              <button class="gizmo-btn" data-gizmo="rotate">
+                <span class="icon">↻</span> Rotate
+              </button>
+              <button class="gizmo-btn" data-gizmo="scale">
+                <span class="icon">⤡</span> Scale
+              </button>
+            </div>
+            <div class="gizmo-hint">W · E · R</div>
           </div>
-          <div class="gizmo-hint">W · E · R</div>
-          <div class="section-title" style="margin-top:10px">Properties</div>
-          <div id="properties-panel"></div>
-          <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete Element</button>
-        </div>
 
-        <div class="sidebar-section">
-          <div class="section-title">Scene</div>
-          <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
-          <button id="preview-vr-btn" class="btn" style="border-color:#818cf8;color:#818cf8">Preview in VR ↗</button>
-          <button id="export-json-btn" class="btn">Export JSON</button>
-        </div>
+          <div class="panel-section" id="properties-section">
+            <div class="section-title">Properties</div>
+            <div id="properties-panel"></div>
+            <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete Element</button>
+          </div>
 
-        <div id="status-bar">Ready — load a .spz scene or start placing elements</div>
-      </div>
+          <div class="panel-section">
+            <div class="section-title">Scene</div>
+            <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
+            <button id="export-json-btn" class="btn">Export JSON</button>
+            <button id="export-pdf-btn" class="btn">Export Shot List PDF</button>
+            <button id="clear-scene-btn" class="btn btn-danger">Clear Scene</button>
+          </div>
+        </aside>
 
-      <!-- 3D viewport — used by both editor and review modes -->
-      <div id="scene-container">
+        <!-- 3D viewport -->
+        <div id="scene-container">
         <div id="loading-overlay">
           <div id="loading-spinner"></div>
           <p id="loading-text">Loading scene…</p>
@@ -497,6 +584,7 @@
             <div id="shot-review-number">Shot 1 of 1</div>
             <div id="shot-review-type"></div>
             <div id="shot-review-label"></div>
+            <div id="shot-review-position" style="color:var(--text-muted);font-size:10px;margin-top:4px"></div>
           </div>
           <button id="shot-next-btn" class="shot-nav-btn">&#9654;</button>
           <button id="shot-review-exit" class="shot-exit-btn">✕ Exit</button>
@@ -507,7 +595,40 @@
           Place: click &nbsp;·&nbsp; Cancel: Escape &nbsp;·&nbsp; Delete: Del/Backspace<br>
           W = Move &nbsp;·&nbsp; E = Rotate &nbsp;·&nbsp; R = Scale
         </div>
+        </div>
+
+        <aside id="right-panel">
+          <button type="button" class="panel-toggle btn btn-ghost" id="right-panel-toggle" title="Toggle panel" style="margin:4px 8px;padding:4px;font-size:12px">▶</button>
+          <div class="panel-section">
+            <div class="section-title">Shot Sequence</div>
+            <button id="sequence-mode-btn" class="btn" style="border-color:#a78bfa;color:#a78bfa;margin-bottom:5px">
+              ◉ Sequence Mode
+            </button>
+            <button id="review-mode-btn" class="btn" style="border-color:#34d399;color:#34d399;margin-bottom:5px">
+              ▶ Review Shots
+            </button>
+            <button id="sequence-reset-btn" class="btn">Clear Sequence</button>
+            <div id="sequence-hint" style="display:none;margin-top:6px;padding:6px 8px;background:var(--bg-raised);border-radius:4px;border-left:2px solid #a78bfa;color:#a78bfa;font-size:9px;line-height:1.6">
+              Click cameras in shooting order.<br>Each click assigns the next shot #.<br>Click again to re-assign.
+            </div>
+          </div>
+        </aside>
       </div>
+
+      <footer id="bottombar">
+        <div class="shortcuts">
+          <span class="shortcut"><kbd>W</kbd> Move</span>
+          <span class="shortcut"><kbd>E</kbd> Rotate</span>
+          <span class="shortcut"><kbd>R</kbd> Scale</span>
+          <span class="shortcut"><kbd>Esc</kbd> Deselect</span>
+          <span class="shortcut"><kbd>Del</kbd> Delete</span>
+          <span class="shortcut"><kbd>Space</kbd> Next Shot</span>
+        </div>
+        <div id="status-bar">
+          <span id="status-msg">Ready — load a .spz scene or start placing elements</span>
+          <span id="element-count" class="status-count"></span>
+        </div>
+      </footer>
 
       <!-- Shell root — used by reviewer HUD (?mode=viewer/stage4-xr/stage5-xr) -->
       <div id="shell-root"></div>

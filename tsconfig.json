@@ -10,7 +10,6 @@
     "skipLibCheck": true,
     "types": []
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/xrWorld.ts"]
 }

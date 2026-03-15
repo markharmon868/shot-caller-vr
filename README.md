@@ -4,15 +4,18 @@ Template project for building WebXR worldmodel experiences with IWSDK, SparkJS G
 
 <img src="./assets/rm_sensai_webxr_hero.gif" width="800" alt="WebXR worldmodels hero" />
 
-## Getting Started
-Prerequisites: Node `>=20.19.0`, a WebXR-capable browser, and an optional headset for immersive testing.
-
-Install and run:
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
+
+Then open `https://localhost:8081/` (or the port Vite prints). Default mode is the **Editor** for shot planning.
+
+**Demo mode:** Add `?demo=1` to auto-advance through sequenced shots every 4 seconds (for presentations).
+
+**VR Preview:** Click "▶ VR Preview" in the editor to switch to the XR review mode.
 
 ### How to Add Your Own Splat
 
