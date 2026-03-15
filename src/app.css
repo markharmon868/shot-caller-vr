@@ -748,16 +748,20 @@ body {
 }
 
 .home-nav-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
 }
 
 .home-nav-wordmark {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: #f8fafc;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #f8fafc 0%, #e8a020 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .home-nav-links {
@@ -1109,36 +1113,160 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════
-   CREATE PAGE — Upload + generate + Enter VR
+   CREATE PAGE — Mission Control Layout (No Scrolling)
    ═══════════════════════════════════════════════════════ */
 
-.create-main {
-  padding: 32px 24px 80px;
+.mission-control {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
 }
 
-.create-container {
-  max-width: 640px;
-  margin: 0 auto;
+.mission-panel {
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 20, 20, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+  overflow: hidden;
 }
 
-.create-header {
-  margin-bottom: 32px;
+.mission-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
 
-.create-title {
-  margin: 0 0 10px;
-  font-size: clamp(2rem, 4vw, 2.6rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+.mission-panel-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8a020;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.mission-panel-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.mission-panel-hint {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.65;
+  max-width: 520px;
+}
+
+.mission-panel-images {
+  display: flex;
+  flex-direction: column;
+}
+
+.mission-panel-images .create-preview-grid {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mission-panel-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mission-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(10, 10, 10, 0.8);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  min-height: 200px;
+  transition: border-color 0.2s;
+}
+
+.mission-textarea:focus {
+  outline: none;
+  border-color: rgba(232, 160, 32, 0.5);
+}
+
+.mission-status {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.mission-status-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.mission-status-text {
+  flex: 1;
+}
+
+.mission-status-label {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
   color: #f8fafc;
 }
 
-.create-subtitle {
+.mission-status-detail {
   margin: 0;
+  font-size: 13px;
   color: #94a3b8;
-  font-size: 1rem;
-  line-height: 1.65;
-  max-width: 520px;
+}
+
+.mission-btn-generate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: #e8a020;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.mission-btn-generate:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.mission-btn-generate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mission-btn-icon {
+  font-size: 18px;
 }
 
 /* ── Cards ── */

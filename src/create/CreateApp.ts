@@ -85,14 +85,10 @@ class CreateApp {
   private vrSection!: HTMLElement;
   private enterVrBtn!: HTMLAnchorElement;
   private openEditorBtn!: HTMLAnchorElement;
-  private apiKeyInput!: HTMLInputElement;
-  private saveKeyBtn!: HTMLButtonElement;
-  private apiKeyStatus!: HTMLElement;
 
   start(): void {
     this.bindElements();
     this.bindEvents();
-    this.loadApiKeyStatus();
   }
 
   private bindElements(): void {
@@ -110,9 +106,6 @@ class CreateApp {
     this.vrSection = document.getElementById("create-vr-section")!;
     this.enterVrBtn = document.getElementById("create-enter-vr") as HTMLAnchorElement;
     this.openEditorBtn = document.getElementById("create-open-editor") as HTMLAnchorElement;
-    this.apiKeyInput = document.getElementById("nano-banana-api-key") as HTMLInputElement;
-    this.saveKeyBtn = document.getElementById("nano-banana-save-key") as HTMLButtonElement;
-    this.apiKeyStatus = document.getElementById("nano-banana-status")!;
   }
 
   private bindEvents(): void {
@@ -156,46 +149,6 @@ class CreateApp {
       if (!href || href === "#") return;
       showVRTransition(href);
     });
-
-    // API key save button
-    this.saveKeyBtn.addEventListener("click", () => this.handleSaveApiKey());
-  }
-
-  // ── API Key Management ──
-
-  private loadApiKeyStatus(): void {
-    const apiKey = getNanoBananaApiKey();
-    if (apiKey) {
-      this.apiKeyStatus.textContent = "✓ API key saved";
-      this.apiKeyStatus.style.color = "#10b981";
-      this.apiKeyInput.value = "••••••••••••••••";
-    } else {
-      this.apiKeyStatus.textContent = "";
-    }
-  }
-
-  private handleSaveApiKey(): void {
-    const apiKey = this.apiKeyInput.value.trim();
-
-    if (!apiKey) {
-      this.apiKeyStatus.textContent = "⚠ Please enter an API key";
-      this.apiKeyStatus.style.color = "#ef4444";
-      return;
-    }
-
-    // Don't save if it's the masked placeholder
-    if (apiKey === "••••••••••••••••") {
-      this.apiKeyStatus.textContent = "✓ API key already saved";
-      this.apiKeyStatus.style.color = "#10b981";
-      return;
-    }
-
-    setNanoBananaApiKey(apiKey);
-    this.apiKeyStatus.textContent = "✓ API key saved successfully";
-    this.apiKeyStatus.style.color = "#10b981";
-    this.apiKeyInput.value = "••••••••••••••••";
-
-    console.log("🍌 Nano Banana API key saved");
   }
 
   // ── File Management ──
@@ -240,13 +193,7 @@ class CreateApp {
   }
 
   private renderPreviews(): void {
-    if (this.files.length === 0) {
-      this.fileCount.textContent = "No files selected";
-    } else {
-      const totalBytes = this.files.reduce((sum, fp) => sum + fp.file.size, 0);
-      const sizeMb = (totalBytes / (1024 * 1024)).toFixed(1);
-      this.fileCount.textContent = `${this.files.length} image${this.files.length > 1 ? "s" : ""} · ${sizeMb} MB`;
-    }
+    this.fileCount.textContent = `${this.files.length} / ${MAX_FILES}`;
 
     this.previewGrid.innerHTML = this.files
       .map(
@@ -295,7 +242,8 @@ class CreateApp {
     try {
       // Step 1: Enhance images with Nano Banana (if available)
       let enhancedFiles = this.files;
-      const apiKey = getNanoBananaApiKey();
+      // Use env variable for hackathon demo
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || getNanoBananaApiKey();
 
       if (this.files.length > 0 && apiKey) {
         this.showStatus("Enhancing images…", "🍌 Nano Banana is refining your images for better quality");

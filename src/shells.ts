@@ -600,89 +600,54 @@ export function renderCreateShell(): void {
         </div>
       </nav>
 
-      <!-- ── CREATE FORM ── -->
-      <main class="create-main">
-        <div class="create-container">
+      <!-- ── MISSION CONTROL ── -->
+      <main class="mission-control">
 
-          <div class="create-header">
-            <p class="home-badge">New World</p>
-            <h1 class="create-title">Create your world</h1>
-            <p class="create-subtitle">Upload reference images and describe your scene. We'll generate a 3D environment you can walk through in VR.</p>
+        <!-- Left Panel: Image Upload -->
+        <div class="mission-panel mission-panel-images">
+          <div class="mission-panel-header">
+            <span class="mission-panel-label">Reference Images</span>
+            <span class="mission-panel-count" id="create-file-count">0 / 20</span>
           </div>
 
-          <!-- Upload zone -->
-          <div class="create-card">
-            <div class="create-card-header">
-              <span class="create-card-label">Reference Images</span>
-              <span class="create-card-hint" id="create-file-count">No files selected</span>
-            </div>
-            <div class="create-dropzone" id="create-dropzone">
-              <div class="create-dropzone-content">
-                <div class="create-dropzone-icon">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="m21 15-5-5L5 21"/>
-                  </svg>
-                </div>
-                <p class="create-dropzone-text">Drop images here or <span class="create-dropzone-link">browse</span></p>
-                <p class="create-dropzone-hint">PNG, JPG, or WebP · up to 20 images</p>
+          <div class="create-dropzone" id="create-dropzone">
+            <div class="create-dropzone-content">
+              <div class="create-dropzone-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <path d="m21 15-5-5L5 21"/>
+                </svg>
               </div>
-              <input type="file" id="create-file-input" multiple accept="image/png,image/jpeg,image/webp" class="create-file-hidden" />
+              <p class="create-dropzone-text">Drop images or <span class="create-dropzone-link">browse</span></p>
+              <p class="create-dropzone-hint">PNG, JPG, WebP · Max 20</p>
             </div>
-            <div class="create-preview-grid" id="create-preview-grid"></div>
+            <input type="file" id="create-file-input" multiple accept="image/png,image/jpeg,image/webp" class="create-file-hidden" />
           </div>
 
-          <!-- Text description -->
-          <div class="create-card">
-            <div class="create-card-header">
-              <span class="create-card-label">Scene Description</span>
-              <span class="create-card-hint">Plain English — be as specific as you like</span>
-            </div>
-            <textarea
-              id="create-text-input"
-              class="create-textarea"
-              placeholder="Describe the scene you want to create…&#10;&#10;Example: A narrow cobblestone alley in Rome at golden hour. Warm light spills between terracotta buildings. A small café with outdoor seating sits at the end of the alley. Vespa parked against a wall."
-              rows="6"
-            ></textarea>
+          <div class="create-preview-grid" id="create-preview-grid"></div>
+        </div>
+
+        <!-- Right Panel: Description + Controls -->
+        <div class="mission-panel mission-panel-controls">
+          <div class="mission-panel-header">
+            <span class="mission-panel-label">Scene Description</span>
+            <span class="mission-panel-hint">Describe your location</span>
           </div>
 
-          <!-- Nano Banana Settings -->
-          <details class="create-settings">
-            <summary class="create-settings-summary">
-              <span class="create-settings-icon">🍌</span>
-              <span class="create-settings-label">Nano Banana Settings</span>
-              <span class="create-settings-hint">(Optional) Enhance images for better quality</span>
-            </summary>
-            <div class="create-settings-content">
-              <p class="create-settings-description">
-                Nano Banana uses Google's Gemini to enhance your images before generation,
-                creating more photorealistic, high-fidelity results. Enter your Google API key below.
-              </p>
-              <div class="create-input-group">
-                <label for="nano-banana-api-key" class="create-input-label">
-                  Google API Key
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" class="create-link">Get API key →</a>
-                </label>
-                <input
-                  type="password"
-                  id="nano-banana-api-key"
-                  class="create-input"
-                  placeholder="Enter your Google API key"
-                />
-                <button id="nano-banana-save-key" class="home-btn-secondary home-btn-sm">Save Key</button>
-              </div>
-              <p class="create-settings-note" id="nano-banana-status"></p>
-            </div>
-          </details>
+          <textarea
+            id="create-text-input"
+            class="mission-textarea"
+            placeholder="Describe the scene you want to create…&#10;&#10;Example: A narrow cobblestone alley in Rome at golden hour. Warm light spills between terracotta buildings. A small café with outdoor seating sits at the end of the alley. Vespa parked against a wall."
+          ></textarea>
 
-          <!-- Generation status (hidden until generation starts) -->
-          <div class="create-card create-status-card" id="create-status-card" style="display:none">
-            <div class="create-status-row">
+          <!-- Status (shown during generation) -->
+          <div class="mission-status" id="create-status-card" style="display:none">
+            <div class="mission-status-row">
               <div class="create-spinner" id="create-spinner"></div>
-              <div class="create-status-text">
-                <p class="create-status-label" id="create-status-label">Generating world…</p>
-                <p class="create-status-detail" id="create-status-detail">This may take a minute or two</p>
+              <div class="mission-status-text">
+                <p class="mission-status-label" id="create-status-label">Generating world…</p>
+                <p class="mission-status-detail" id="create-status-detail">Enhancing images with Nano Banana</p>
               </div>
             </div>
             <div class="create-progress-bar">
@@ -690,38 +655,16 @@ export function renderCreateShell(): void {
             </div>
           </div>
 
-          <!-- Error display -->
+          <!-- Error -->
           <div class="create-error" id="create-error" style="display:none"></div>
 
-          <!-- Actions -->
-          <div class="create-actions">
-            <button class="home-btn-primary home-btn-lg create-generate-btn" id="create-generate-btn" disabled>
-              <span class="home-btn-icon">✦</span> Generate World
-            </button>
-          </div>
-
-          <!-- Enter VR (hidden until world is ready) -->
-          <div class="create-vr-section" id="create-vr-section" style="display:none">
-            <div class="create-vr-card">
-              <div class="create-vr-status">
-                <div class="create-vr-check">✓</div>
-                <div>
-                  <p class="create-vr-ready">World ready</p>
-                  <p class="create-vr-hint">Your 3D environment has been generated</p>
-                </div>
-              </div>
-              <div class="create-vr-actions">
-                <a class="home-btn-primary home-btn-lg create-enter-vr" id="create-enter-vr" href="#">
-                  🥽 Enter VR
-                </a>
-                <a class="home-btn-secondary" id="create-open-editor" href="?mode=editor">
-                  Open in Editor
-                </a>
-              </div>
-            </div>
-          </div>
-
+          <!-- Generate Button -->
+          <button class="mission-btn-generate" id="create-generate-btn" disabled>
+            <span class="mission-btn-icon">✦</span>
+            <span>Generate World</span>
+          </button>
         </div>
+
       </main>
 
     </div>
