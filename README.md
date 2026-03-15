@@ -1,125 +1,301 @@
-# sensai-webxr-worldmodels
+# Shot Caller
 
-Template project for building WebXR worldmodel experiences with IWSDK, SparkJS Gaussian splats, and spatial UI.
+> Plan your shoot on a laptop. Walk it in VR. Let AI write the call sheet.
 
-<img src="./assets/rm_sensai_webxr_hero.gif" width="800" alt="WebXR worldmodels hero" />
+Shot Caller is a WebXR production planning tool for filmmakers. Input a real shooting location, generate a 3D world model of that space, block your cameras and lights in a 3D editor, sequence your shots, validate everything in VR on a PICO headset, and export an AI-generated call sheet your AD can actually use.
 
-## Quick Start
+Built at the [World Model Hackathon](https://luma.com/worldsinaction-sf26) — SensAI × PICO, March 2026.
+
+---
+
+<!-- SCREENSHOT: Hero screenshot or GIF of the 3D editor with a scene blocked out -->
+<!-- Suggested: Wide shot of the editor showing a camera with FOV cone, a light with coverage cone, and a cast mark on a Gaussian splat world -->
+
+---
+
+## What it does
+
+Shot Caller has four modes accessible from a single URL:
+
+| Mode | Surface | What happens |
+|------|---------|--------------|
+| **Scouting** | Desktop | Input a Google Maps address or upload scout photos → Marble API generates a 3D Gaussian splat of the real location |
+| **Editing** | Desktop | Place cameras (with FOV cones), lights (with coverage cones), crew markers, and cast marks in the world. Sequence shots and group lighting setups. |
+| **VR Preview** | PICO headset | Same URL detects WebXR → immersive walkthrough of the fully blocked scene at real scale |
+| **Export** | Desktop | Claude AI agent reads the blocking plan → generates shooting order, equipment list, department breakdown → exports as PDF + shareable URL |
+
+---
+
+## Demo
+
+<!-- SCREENSHOT: GIF or video embed of the full demo flow -->
+<!-- Suggested flow: address input → loading screen → world loads → place camera → sequence → generate call sheet → hand to PICO -->
+
+**Demo video:** [Insert YouTube/Loom link here]
+
+**Live demo:** [Insert Vercel deployment URL here]
+
+---
+
+## Screenshots
+
+<!-- Add screenshots below as you have them. Suggested captions included. -->
+
+### Scouting Mode — Location input
+<!-- SCREENSHOT: The location input panel with a Maps address field and photo upload option -->
+
+### Editing Mode — 3D planning editor
+<!-- SCREENSHOT: Three.js orbit viewport with a camera (FOV cone), light (coverage cone), and cast mark placed in a Gaussian splat world -->
+
+### Shot Sequencing
+<!-- SCREENSHOT: Sequence mode active — cameras numbered 1, 2, 3 with shot type labels visible -->
+
+### AI Call Sheet Output
+<!-- SCREENSHOT: The call sheet panel showing shooting order grouped by setup, equipment list, and department breakdown -->
+
+### VR Preview — PICO walkthrough
+<!-- SCREENSHOT: PICO headset view showing the Gaussian splat world with camera placement and FOV cone visible at real scale -->
+
+### PDF Export
+<!-- SCREENSHOT: The exported PDF showing the top-down floor plan alongside the AI-generated call sheet -->
+
+---
+
+## Tech stack
+
+```
+Frontend         Three.js r181 · IWSDK (ElixrJS) · SparkJS 2.0 · Vite · TypeScript
+World model      World Labs Marble API (Gaussian splat generation)
+Location data    Google Maps Static API · Google Street View Static API
+XR               WebXR Device API · PICO 4 browser
+AI agent         Claude API (claude-sonnet-4-6) via Anthropic SDK
+Scene state      Vercel KV (Redis)
+Export           PDFKit · Three.js orthographic renderer
+Deployment       Vercel (static + serverless functions)
+Base template    sensai-webxr-worldmodels (IWSDK + SparkJS + PICO emulator)
+```
+
+---
+
+## Architecture
+
+```
+Browser (Desktop)                    Browser (PICO)
+┌─────────────────────────┐          ┌──────────────────────────┐
+│  Three.js Orbit Editor  │          │  IWSDK XR Session        │
+│  - Camera + FOV cone    │          │  - SparkJS .spz render   │
+│  - Light + coverage     │  same    │  - GLTF elements at      │
+│  - Crew / cast markers  │  URL ──► │    real scale            │
+│  - Shot sequencing      │          │  - Shot number badges    │
+│  - Setup grouping       │          │  - Locomotion (PICO)     │
+└────────────┬────────────┘          └──────────────────────────┘
+             │ scene JSON
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Vercel Serverless                        │
+│                                                             │
+│  /api/generate-world   Maps imagery → Marble → .spz        │
+│  /api/scene            POST/GET scene JSON (Vercel KV)      │
+│  /api/callsheet        Scene JSON → Claude API → call sheet │
+│  /api/export-pdf       Floor plan PNG + call sheet → PDF   │
+└─────────────────────────────────────────────────────────────┘
+             │                │                │
+             ▼                ▼                ▼
+      Marble API        Vercel KV        Claude API
+   (world gen)        (scene state)   (call sheet gen)
+```
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js >= 20.19.0
+- A WebXR-capable browser (Chrome recommended for desktop)
+- PICO 4 headset for VR preview (optional — desktop emulator available)
+
+### Environment variables
+
+Copy `.env.example` to `.env.local` and fill in your keys:
+
+```env
+GOOGLE_MAPS_API_KEY=        # Google Cloud — Maps Static API + Street View Static API
+MARBLE_API_KEY=             # World Labs — marble.worldlabs.ai
+ANTHROPIC_API_KEY=          # Anthropic — console.anthropic.com
+KV_REST_API_URL=            # Vercel KV — from Vercel dashboard
+KV_REST_API_TOKEN=          # Vercel KV — from Vercel dashboard
+```
+
+### Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open `https://localhost:8081/` (or the port Vite prints).
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### App Modes
+**PICO testing:** Use `npm run dev -- --host` to expose on your local network, then open the IP address in the PICO browser. Or deploy to Vercel for HTTPS (required for WebXR on device).
 
-- `/` — **Scout**: pick a location on Google Maps → generate a Gaussian splat
-- `/?mode=editor` — **Editor**: block shots, place cameras/crew/equipment
-- `/?mode=vr` — **VR Preview**: walk the scene on PICO headset or desktop emulator
-- `/?demo=1` — **Demo mode**: auto-advance shot review every 4 seconds (for presentations)
-
-**VR Preview:** Click "Preview in VR" in the editor to enter the headset walkthrough.
-
-**Demo mode:** Add `?demo=1` to auto-advance through sequenced shots every 4 seconds.
-
-### How to Add Your Own Splat
-
-1. Attach `GaussianSplatLoader` to an entity (already done in `src/index.ts`).
-2. Set `splatUrl` to your local or remote `.spz`/`.ply`.
-3. Optionally set `meshUrl` to a `.gltf/.glb` collision mesh.
-4. Keep large splat files outside the repo (for example in object storage) and load via URL.
-
-## SensAI Helpers
-
-### Gaussian Splat Loader
-- Loads and unloads local or remote `.spz`/`.ply` splats as children of an entity transform.
-- Supports optional collider loading through `meshUrl` (`GLTFLoader`) for locomotion hit testing.
-- Includes timeout-based loading and explicit error propagation.
-- API surface:
-  - Component props: `splatUrl`, `meshUrl`, `autoLoad`, `animate`, `enableLod`, `lodSplatScale`
-  - System methods: `load(entity, { animate? })`, `unload(entity, { animate? })`, `replayAnimation(entity, { duration? })`
-- Typical usage: add `GaussianSplatLoader` to an entity, set URLs, then let `autoLoad` handle startup or call system methods for runtime swaps.
-
-### Gaussian Splat Animator
-<img src="./assets/rm_sensai_splatanimation.gif" width="800" alt="Splat fly-in animation" />
-- GPU-accelerated fly-in/fly-out effect powered by SparkJS `dyno`.
-- Animates per-splat position, turbulence, scale, and opacity while CPU updates only a progress uniform.
-
-
-## Worldmodels
-- Uses `.spz` or `.ply` worldmodel assets.
-- Position, scale, and pivot are controlled by the hosting entity transform.
-- Runtime loading is handled by `GaussianSplatLoader`.
-
-### Marble (WorldLabs)
-- World Labs Marble outputs can be exported as Gaussian splats and used as source assets.
-- For interaction and locomotion, pair splats with a separate collision mesh.
-- If using remote-generated assets, integrate your own fetch/API flow before assigning `splatUrl`.
-- Host large splat files outside the repository (object storage/CDN is recommended).
-
-### SparkJS
-- Open-source Gaussian splat renderer from the World Labs team: https://sparkjs.dev/
-- Provides performant Gaussian splat rendering for WebGL2/WebXR in Three.js-based scenes.
-- This project uses **SparkJS 2.0 preview** with Level-of-Detail (LoD) enabled.
-
-***Level of Detail (LoD)***
-- LoD automatically adjusts splat quality based on distance: nearby areas render at full detail while distant areas use fewer, coarser splats.
-- This keeps frame rate stable on resource-constrained devices (Quest, PICO) by maintaining a fixed rendering budget instead of always rendering every splat.
-- LoD is enabled by default on the `GaussianSplatLoader` component (`enableLod: true`). Adjust `lodSplatScale` to trade quality for performance (lower = faster, higher = sharper).
-- **Runtime LoD (default):** Point `splatUrl` at any `.spz` file. The LoD tree is computed in-browser on load (~4s for 500K splats). No extra tooling needed.
-- **Pre-built LoD (faster startup):** Bake the LoD tree offline so the browser skips the computation. Clone the [SparkJS repo](https://github.com/sparkjsdev/spark/tree/v2.0.0-preview), build the Rust CLI, and run:
+### Deploy to Vercel
 
 ```bash
-cargo build --manifest-path rust/build-lod/Cargo.toml --release
-./rust/target/release/build-lod --spz your-splat.spz
-# produces your-splat-lod.spz
+npm install -g vercel
+vercel
 ```
 
-***Three.js Version & Compatibility***
-- This project uses `super-three@0.181.0` (Three.js r181), upgraded from r177 to support SparkJS 2.0.
-- IWSDK externalizes its Three.js dependency, so it automatically uses the project's version. A custom Vite plugin (`deduplicateThree` in `vite.config.ts`) redirects IWSDK's bundled r177 imports to the project's single r181 instance, preventing duplicate Three.js modules.
-- A camera clone patch in `gaussianSplatLoader.ts` prevents a per-frame crash caused by SparkJS's LoD system deep-cloning IWSDK's non-clonable UI objects.
-- **These workarounds are temporary.** IWSDK has already [migrated to r181 on GitHub](https://github.com/facebook/immersive-web-sdk/commit/7317fdb) (Dec 2025) but has not published a new npm release since v0.2.2 (Nov 2025). Once the next IWSDK version ships, the Vite dedup plugin can be removed. The camera clone patch remains needed until SparkJS changes its `driveLod` behavior.
+Add your environment variables in the Vercel dashboard under Project Settings → Environment Variables.
 
+---
 
-## IWSDK 
-IWSDK (Immersive Web SDK) is a WebXR-focused ECS framework for building interactive 3D/XR apps with built-in systems such as locomotion, grabbing, spatial UI, and XR session management.
-see https://elixrjs.io/
+## Project structure
 
-### Headset simulator
-<img src="./assets/rm_sensai_headsetsimulator.png" width="800" alt="Headset simulator" />
-How to use
+```
+shot-caller-vr/
+├── src/
+│   ├── index.ts              # Entry point — mode detection + scene init
+│   ├── editor/
+│   │   ├── Editor.ts         # Three.js orbit scene, OrbitControls
+│   │   ├── ElementManager.ts # Place, select, drag production elements
+│   │   ├── SequenceMode.ts   # Shot numbering, type tagging, setup groups
+│   │   └── elements/
+│   │       ├── Camera.ts     # Camera GLTF + CameraHelper FOV cone
+│   │       ├── Light.ts      # Light GLTF + SpotLight coverage cone
+│   │       ├── CrewMark.ts   # Crew position silhouette + role label
+│   │       └── CastMark.ts   # Floor X + character name + eyeline
+│   ├── vr/
+│   │   ├── VRScene.ts        # IWSDK XR session + SparkJS splat loader
+│   │   ├── ElementRenderer.ts# Render scene JSON elements in XR
+│   │   └── Locomotion.ts     # PICO controller teleport + smooth walk
+│   ├── scene/
+│   │   ├── SceneManager.ts   # Serialise / deserialise scene JSON
+│   │   └── types.ts          # Scene JSON schema types
+│   └── ui/
+│       ├── Sidebar.ts        # Element picker + sequence mode controls
+│       ├── CallSheetPanel.ts # Render AI call sheet output
+│       └── ExportPanel.ts    # Export controls + shareable URL
+├── api/
+│   ├── generate-world.ts     # Maps + Marble API → .spz
+│   ├── scene.ts              # Vercel KV scene CRUD
+│   ├── callsheet.ts          # Claude API call sheet generation
+│   └── export-pdf.ts         # PDFKit PDF generation
+├── public/
+│   └── assets/
+│       └── models/           # Pre-built GLTF production elements
+│           ├── camera.glb
+│           ├── light-led.glb
+│           ├── light-fresnel.glb
+│           ├── crew-silhouette.glb
+│           ├── dolly.glb
+│           └── c-stand.glb
+├── index.html
+├── vite.config.ts
+├── tsconfig.json
+└── .env.example
+```
 
-- The project enables the IWSDK local simulator via `@iwsdk/vite-plugin-iwer` in `vite.config.ts`.
-- Run `npm run dev` on localhost, open the app in a desktop browser, and use the injected simulator controls to emulate headset/controller behavior during iteration.
+---
 
-### UI
-see https://iwsdk.dev/guides/10-spatial-ui-uikitml.html
-The default render order can conflict with splat rendering, so this template applies a render-order/depth configuration to keep IWSDK UI above splats.
-Pointer depth behavior is also handled so panel interaction remains reliable.
+## Scene JSON schema
 
-### Interactions and Locomotion 
+The core data structure shared between the editor, VR mode, and AI agent:
 
-- Built-in interactions such as one-/two-hand grab and distance grab:
-  https://iwsdk.dev/guides/06-built-in-interactions.html
-- Locomotion concepts (teleport, slide/smooth locomotion, turn):
-  https://iwsdk.dev/concepts/locomotion/
-- This template enables locomotion and grabbing in `World.create(...)`.
+```typescript
+interface SceneJSON {
+  id: string
+  location: {
+    address: string
+    lat?: number
+    lng?: number
+  }
+  splatUrl: string          // CDN URL of the .spz world file
+  meshUrl: string           // CDN URL of the .glb collision mesh
+  elements: ProductionElement[]
+  createdAt: string
+  updatedAt: string
+}
 
-### Spatial Editor
-<img src="./assets/rm_sensai_metaspatial.png" width="800" alt="Metaspatial editor" />
-- Disabled by default.
-- Add it if your workflow requires in-world authoring or frequent scene adjustments during development.
+interface ProductionElement {
+  id: string
+  type: 'camera' | 'light' | 'crew' | 'cast' | 'equipment' | 'setdressing'
+  label: string
+  position: { x: number; y: number; z: number }
+  rotation: { x: number; y: number; z: number }
 
-## Testing and Deployment
-- Build/deploy basics: https://elixrjs.io/guides/08-build-deploy.html
-- Local testing: `npm run dev`
-- Preview production build locally: `npm run build && npm run preview`
-- ***recommended deployment workflow***: deploy static build output (`dist/`) on Cloudflare.
+  // Camera-specific
+  focalLength?: number
+  shotNumber?: number       // Shot sequence order
+  shotType?: 'Wide' | 'Medium' | 'CU' | 'OTS' | 'Insert' | 'POV'
+  shotLabel?: string
+  setupGroup?: 'A' | 'B' | 'C' | 'D'
 
-## Acknowledgements & Credits 
-This project was created as part of the SensAI Hack(https://sensaihack.com/) - Worlds in Action. 
+  // Light-specific
+  colourTemp?: number       // Kelvin
+  lightType?: 'LED' | 'Fresnel' | 'Practical' | 'HMI'
 
-Powered by SensAI Hackademy (https://sensaihackademy.com/).
+  // Crew-specific
+  role?: string             // e.g. "DP", "1st AC", "Gaffer"
+  department?: string
+}
+```
+
+---
+
+## AI call sheet agent
+
+The `/api/callsheet` endpoint sends the scene JSON to Claude with a structured prompt and returns:
+
+```typescript
+interface CallSheetJSON {
+  shootingOrder: {
+    setupGroup: string
+    shots: { shotNumber: number; type: string; label: string; cameraId: string }[]
+    lightingNotes: string
+    estimatedMinutes: number
+  }[]
+  equipmentList: {
+    item: string
+    quantity: number
+    department: string
+  }[]
+  departmentCalls: {
+    department: string
+    callTime: 'First' | 'After camera' | 'After lighting'
+    notes: string
+  }[]
+  totalEstimatedMinutes: number
+  productionNotes: string
+}
+```
+
+The agent reasons about shooting order efficiency (grouping by setup group to minimise lighting turnaround), equipment quantities (derived from element counts and types), department dependencies (crane placed → grip department call), and setup time estimates.
+
+---
+
+## Team
+
+<!-- Add team members and their roles -->
+
+| Name | Role |
+|------|------|
+| [Your name] | [Your role — e.g. Web3D Editor + Shot Sequencing] |
+| [Teammate 2] | [e.g. Location Pipeline + World Generation] |
+| [Teammate 3] | [e.g. VR Mode + AI Agent + Export] |
+
+---
+
+## Acknowledgements
+
+- [SensAI Hackademy](https://sensaihackademy.com/) and [PICO](https://www.picoxr.com/global) for organising the World Model Hackathon
+- [World Labs](https://www.worldlabs.ai/) for the Marble API and the [sensai-webxr-worldmodels](https://github.com/V4C38/sensai-webxr-worldmodels) template
+- [SparkJS](https://sparkjs.dev/) for the open-source Gaussian splat renderer
+- [IWSDK / ElixrJS](https://elixrjs.io/) for the WebXR framework
+- [Anthropic](https://anthropic.com) for the Claude API
+- [Kenney.nl](https://kenney.nl) and [Mixamo](https://mixamo.com) for free GLTF assets
+
+---
+
+## License
+
+MIT
