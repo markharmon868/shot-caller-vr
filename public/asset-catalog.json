@@ -29,7 +29,7 @@
           "dailyRate": 450,
           "weeklyRate": 1800,
           "unit": "body",
-          "gltfUrl": "/models/sony-pmw-f5.glb",
+          "gltfUrl": "/models/sony_pmw-f5.glb",
           "yOffset": 0,
           "notes": "Pairs with Sony PL or E-mount cinema primes."
         }
@@ -112,7 +112,8 @@
           "dailyRate": 600,
           "weeklyRate": 2400,
           "unit": "dolly",
-          "gltfUrl": null,
+          "gltfUrl": "/models/dolly.glb",
+          "yOffset": 0,
           "notes": "Requires dolly grip operator. Track rented separately at $50/10ft section."
         },
         {
@@ -187,6 +188,72 @@
           "unit": "kit",
           "gltfUrl": null,
           "notes": "Expendable — price is per-use. Include in production budget."
+        }
+      ]
+    },
+    {
+      "id": "scene-props",
+      "label": "Scene Props",
+      "elementType": "props",
+      "icon": "🎬",
+      "description": "Hero props and vehicles for scene blocking.",
+      "items": [
+        {
+          "id": "car-aztek",
+          "name": "Pontiac Aztek (Walter's Car)",
+          "manufacturer": "Hero Prop",
+          "description": "Walter White's 2004 Pontiac Aztek. Hero vehicle for the pizza scene driveway blocking.",
+          "dailyRate": 500,
+          "weeklyRate": 2000,
+          "unit": "vehicle",
+          "gltfUrl": "/models/car-aztek.glb",
+          "yOffset": 0,
+          "notes": "Position in driveway. Walter stands at driver-side window."
+        },
+        {
+          "id": "pizza-box",
+          "name": "Pizza Box",
+          "manufacturer": "Hero Prop",
+          "description": "Domino's-style pizza box. Hero prop for the pizza roof throw.",
+          "dailyRate": 0,
+          "weeklyRate": 0,
+          "unit": "prop",
+          "gltfUrl": "/models/pizza-box.glb",
+          "yOffset": 0,
+          "notes": "Place near Walter's mark. Open version used post-throw."
+        },
+        {
+          "id": "pizza",
+          "name": "Pizza (Whole)",
+          "manufacturer": "Hero Prop",
+          "description": "Full pizza for the iconic roof throw. Position on roof for final frame.",
+          "dailyRate": 0,
+          "weeklyRate": 0,
+          "unit": "prop",
+          "gltfUrl": "/models/pizza.glb",
+          "yOffset": 0,
+          "notes": "Place on elevated surface to represent landing position on roof."
+        }
+      ]
+    },
+    {
+      "id": "cast",
+      "label": "Cast",
+      "elementType": "cast_mark",
+      "icon": "🎭",
+      "description": "Character stand-ins for scene blocking.",
+      "items": [
+        {
+          "id": "walter-white",
+          "name": "Walter White",
+          "manufacturer": "Character",
+          "description": "Walter White stand-in for pizza scene blocking. Place at driveway mark.",
+          "dailyRate": 0,
+          "weeklyRate": 0,
+          "unit": "character",
+          "gltfUrl": "/models/walter.glb",
+          "yOffset": 0,
+          "notes": "Primary blocking mark. Position at driver-side car window for argument, then driveway center for throw."
         }
       ]
     }
