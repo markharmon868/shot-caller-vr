@@ -185,18 +185,22 @@ export class SceneState {
 
   private saveBridgeElements(data: SceneData): void {
     const kindMap: Record<string, string> = {
-      camera:    "camera",
-      light:     "light",
-      cast_mark: "castMark",
-      crew:      "crew",
-      equipment: "equipment",
+      camera:      "camera",
+      light:       "light",
+      cast_mark:   "castMark",
+      crew:        "crew",
+      equipment:   "equipment",
+      props:       "setDressing",
+      set_dressing:"setDressing",
     };
     const assetMap: Record<string, string> = {
-      camera:    "asset-camera",
-      light:     "asset-light",
-      cast_mark: "asset-cast-mark",
-      crew:      "asset-crew",
-      equipment: "asset-equipment",
+      camera:      "asset-camera",
+      light:       "asset-light",
+      cast_mark:   "asset-cast-mark",
+      crew:        "asset-crew",
+      equipment:   "asset-equipment",
+      props:       "asset-equipment",
+      set_dressing:"asset-equipment",
     };
 
     const bundleElements = data.elements.map((el) => {
@@ -242,7 +246,7 @@ export class SceneState {
         transform: {
           position: el.position,
           rotation: [0, el.rotationY, 0],
-          scale: [1, 1, 1],
+          scale: el.scale ?? [1, 1, 1],
         },
         properties,
       };
