@@ -2,6 +2,8 @@
  * Location Scout — Google Maps + Street View picker.
  */
 
+import { registerScene, setActiveScene } from "../sceneManager.js";
+
 declare global {
   interface Window {
     google: typeof google;
@@ -290,7 +292,14 @@ function showDoneState(job: PipelineJob): void {
   const panel = document.getElementById("scout-done-panel");
   if (!panel) return;
   const sceneId = job.sceneId ?? job.id.slice(0, 8).toUpperCase();
-  const editorUrl = `/?mode=editor&scene=${sceneId}&splat=./splats/${job.splatFilename}`;
+
+  // Register the new scene and set it as active
+  const splatUrl = `./splats/${job.splatFilename}`;
+  registerScene(sceneId, splatUrl);
+  setActiveScene(sceneId);
+
+  // Navigate to editor with scene parameter (splat URL comes from scene bundle)
+  const editorUrl = `/?mode=editor&scene=${sceneId}`;
   panel.innerHTML = `
     <p class="scout-done-label">Scene ready!</p>
     <a class="scout-open-btn" href="${editorUrl}">Open in Editor →</a>
@@ -315,10 +324,12 @@ function loadRecentJobs(): void {
       }
       list.innerHTML = done.slice(0, 5).map((j) => {
         const sid = j.sceneId ?? j.id.slice(0, 8).toUpperCase();
+        // Register scene so it's available in the scene manager
+        registerScene(sid, `./splats/${j.splatFilename}`);
         return `
         <div class="scout-recent-item">
           <span>${j.splatFilename}</span>
-          <a href="/?mode=editor&scene=${sid}&splat=./splats/${j.splatFilename}">Open →</a>
+          <a href="/?mode=editor&scene=${sid}">Open →</a>
         </div>`;
       }).join("");
     })

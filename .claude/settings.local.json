@@ -1,21 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:code.claude.com)",
-      "Bash(cat:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm install)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git log:*)",
-      "Bash(npm install:*)",
-      "Bash(npx tsc:*)",
-      "Bash(git rm:*)",
-      "Bash(git fetch:*)",
-      "Bash(git merge:*)",
-      "Bash(npm run dev:*)",
-      "Bash(the vr experince seamlessly\" instead of feeling like an isolated area.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git restore:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

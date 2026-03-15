@@ -7,6 +7,7 @@ import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
 import { PropsElement } from "./elements/PropsElement.js";
 import { GltfElement } from "./elements/GltfElement.js";
+import { getActiveScene } from "../sceneManager.js";
 
 export interface SceneData {
   id: string;
@@ -81,7 +82,7 @@ export class SceneState {
 
   constructor(private scene: THREE.Scene) {
     const url = new URL(window.location.href);
-    this.sceneId = url.searchParams.get("scene") ?? "demo";
+    this.sceneId = url.searchParams.get("scene") ?? getActiveScene();
     this.updateUrl();
   }
 

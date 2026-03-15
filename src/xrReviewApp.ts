@@ -11,9 +11,10 @@ import { ReviewSceneLoader } from "./gaussianSplatLoader.js";
 import { createElementById } from "./editor/SceneState.js";
 import type { ProductionElement } from "./editor/elements/ProductionElement.js";
 import { GltfElement } from "./editor/elements/GltfElement.js";
+import { getActiveScene } from "./sceneManager.js";
 
 function getSceneStorageKey(): string {
-  const sceneId = new URL(window.location.href).searchParams.get("scene") ?? "demo";
+  const sceneId = new URL(window.location.href).searchParams.get("scene") ?? getActiveScene();
   return `shot-caller-scene-${sceneId}`;
 }
 

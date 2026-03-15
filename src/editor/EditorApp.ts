@@ -16,6 +16,8 @@ import { GltfElement } from "./elements/GltfElement.js";
 import { toast } from "./toast.js";
 import { exportShotListPDF } from "./exportPDF.js";
 import { loadAssetCatalog, getCatalogItemById } from "./assetCatalog.js";
+import { loadSceneBundle } from "../data/sceneStore.js";
+import { getActiveScene } from "../sceneManager.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -76,19 +78,11 @@ class EditorApp {
     this.initPlacer();
     this.initUI();
 
-    // Auto-load splat: ?spz= param takes priority, otherwise load default
     // Restore saved scene first so we get the saved splatUrl if any
     const restored = this.state.loadLocal();
 
-    const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
-    const params = new URLSearchParams(window.location.search);
-    const spzUrl =
-      params.get("splat") ??
-      params.get("spz") ??
-      (restored ? this.state.getSplatUrl() : null) ??
-      DEFAULT_SPLAT;
-    (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
-    this.loadSplat(spzUrl);
+    // Load scene bundle or splat URL
+    void this.loadSceneOrSplat(restored);
 
     if (restored) {
       this.setStatus(`Scene restored — ${this.state.elements.size} element(s) loaded`);
@@ -887,6 +881,47 @@ class EditorApp {
 
   private isImageUrl(url: string): boolean {
     return /\.(jpe?g|png|webp)$/i.test(url.split("?")[0]);
+  }
+
+  /**
+   * Load scene using scene bundle system or explicit splat URL
+   */
+  private async loadSceneOrSplat(restored: boolean): Promise<void> {
+    const params = new URLSearchParams(window.location.search);
+
+    // Priority 1: Explicit splat parameter (legacy support)
+    const explicitSplat = params.get("splat") ?? params.get("spz");
+    if (explicitSplat) {
+      (document.getElementById("spz-url-input") as HTMLInputElement).value = explicitSplat;
+      await this.loadSplat(explicitSplat);
+      return;
+    }
+
+    // Priority 2: Load from scene bundle using active scene
+    const sceneId = getActiveScene();
+    try {
+      const bundle = await loadSceneBundle(sceneId);
+      const splatUrl = bundle.world.splatUrl;
+      (document.getElementById("spz-url-input") as HTMLInputElement).value = splatUrl;
+      await this.loadSplat(splatUrl);
+      return;
+    } catch (err) {
+      console.error(`Failed to load scene "${sceneId}":`, err);
+    }
+
+    // Priority 3: Fallback to restored splat URL or default
+    const fallbackUrl = restored ? this.state.getSplatUrl() : null;
+    if (fallbackUrl) {
+      (document.getElementById("spz-url-input") as HTMLInputElement).value = fallbackUrl;
+      await this.loadSplat(fallbackUrl);
+    } else {
+      // Last resort: load demo scene
+      console.warn("No scene or splat specified, loading demo scene");
+      const demoBundle = await loadSceneBundle("demo");
+      const demoSplatUrl = demoBundle.world.splatUrl;
+      (document.getElementById("spz-url-input") as HTMLInputElement).value = demoSplatUrl;
+      await this.loadSplat(demoSplatUrl);
+    }
   }
 
   async loadSplat(url: string): Promise<void> {

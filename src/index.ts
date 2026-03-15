@@ -68,7 +68,8 @@ async function start(): Promise<void> {
 
   // VR Preview (mode === "vr")
   renderVrShell();
-  const sceneId = url.searchParams.get("scene")?.trim() || "demo";
+  const { getActiveScene } = await import("./sceneManager.js");
+  const sceneId = url.searchParams.get("scene")?.trim() || getActiveScene();
 
   // Build back-to-editor URL preserving scene + splat params
   const backUrl = new URL("/?mode=editor", window.location.origin);
