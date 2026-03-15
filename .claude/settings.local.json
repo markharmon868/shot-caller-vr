@@ -14,7 +14,8 @@
       "Bash(git rm:*)",
       "Bash(git fetch:*)",
       "Bash(git merge:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(the vr experince seamlessly\" instead of feeling like an isolated area.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
