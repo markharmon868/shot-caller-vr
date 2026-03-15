@@ -15,6 +15,10 @@ async function start(): Promise<void> {
   const url = new URL(window.location.href);
   const mode = resolveAppMode(url, navigator.userAgent);
 
+  console.log("[Shot Caller] Resolved mode:", mode);
+  console.log("[Shot Caller] User agent:", navigator.userAgent);
+  console.log("[Shot Caller] URL:", url.toString());
+
   if (mode === "home") {
     renderHomeShell();
     return;

@@ -6,7 +6,6 @@
 import * as THREE from "three";
 import type { SceneBundle } from "../contracts/stageReview.js";
 import { loadSceneBundle } from "../data/sceneStore.js";
-import { ReviewSceneLoader } from "../gaussianSplatLoader.js";
 import {
   captureMultipleShots,
   captureBirdsEye,
@@ -23,8 +22,8 @@ import {
 export class ExportApp {
   private sceneId: string;
   private bundle: SceneBundle | null = null;
-  private sceneLoader: ReviewSceneLoader | null = null;
   private scene: THREE.Scene | null = null;
+  private renderer: THREE.WebGLRenderer | null = null;
 
   // DOM refs
   private statusEl!: HTMLElement;
@@ -73,14 +72,25 @@ export class ExportApp {
       // Load scene bundle
       this.bundle = await loadSceneBundle(this.sceneId);
 
-      // Create a temporary container for rendering
-      const container = document.createElement("div");
-      container.style.cssText = "position: absolute; top: -99999px; left: -99999px; width: 1920px; height: 1080px;";
-      document.body.appendChild(container);
+      // Create THREE.js scene for screenshot capture
+      this.scene = new THREE.Scene();
+      this.scene.background = new THREE.Color(0x1a1a1a);
 
-      // Initialize scene loader
-      this.sceneLoader = await ReviewSceneLoader.create(container, this.bundle);
-      this.scene = this.sceneLoader.scene;
+      // Add basic lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      this.scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      directionalLight.position.set(5, 10, 7.5);
+      this.scene.add(directionalLight);
+
+      // Create cameras from scene elements
+      this.createCamerasFromElements();
+
+      // Create offscreen renderer for screenshots
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      this.renderer.setSize(1920, 1080);
+      this.renderer.setPixelRatio(2);
 
       this.hideStatus();
       this.generateBtn.disabled = false;
@@ -90,6 +100,41 @@ export class ExportApp {
       this.showError("Failed to load scene: " + (error instanceof Error ? error.message : "Unknown error"));
       console.error("Scene load error:", error);
     }
+  }
+
+  private createCamerasFromElements(): void {
+    if (!this.bundle || !this.scene) return;
+
+    // Create THREE.js cameras for each camera element
+    this.bundle.scene.elements
+      .filter((el) => el.kind === "camera")
+      .forEach((camEl) => {
+        const props = camEl.properties as any;
+        const camera = new THREE.PerspectiveCamera(
+          props.fovDeg || 50,
+          16 / 9,
+          0.1,
+          1000,
+        );
+
+        // Set position and rotation from transform
+        camera.position.set(
+          camEl.transform.position[0],
+          camEl.transform.position[1],
+          camEl.transform.position[2],
+        );
+        camera.rotation.set(
+          camEl.transform.rotation[0],
+          camEl.transform.rotation[1],
+          camEl.transform.rotation[2],
+        );
+
+        // Store element ID for reference
+        camera.userData.elementId = camEl.id;
+        camera.userData.label = camEl.label;
+
+        this.scene!.add(camera);
+      });
   }
 
   private async handleGenerate(): Promise<void> {
@@ -136,7 +181,7 @@ export class ExportApp {
   }
 
   private async captureScreenshots(): Promise<Map<string, string>> {
-    if (!this.bundle || !this.scene || !this.sceneLoader) {
+    if (!this.bundle || !this.scene) {
       throw new Error("Scene not initialized");
     }
 
@@ -145,9 +190,8 @@ export class ExportApp {
     // Get all camera elements from the bundle
     const cameraElements = this.bundle.scene.elements.filter((el) => el.kind === "camera");
 
-    // Create THREE.js cameras for each camera element
+    // Find the corresponding Three.js cameras in the scene
     for (const camEl of cameraElements) {
-      // Find the corresponding Three.js camera in the scene
       const threeCamera = this.scene.children.find(
         (child) => child.userData.elementId === camEl.id && child instanceof THREE.Camera,
       ) as THREE.Camera | undefined;
@@ -262,7 +306,7 @@ export class ExportApp {
     };
 
     return {
-      projectName: this.bundle.scene.worldDescriptor.projectName || "Untitled Project",
+      projectName: `Scene ${this.sceneId}`,
       sceneId: this.sceneId,
       generatedDate: new Date(),
       shots,
@@ -297,8 +341,7 @@ export class ExportApp {
       return;
     }
 
-    const projectName = this.bundle.scene.worldDescriptor.projectName || "shot-caller";
-    const filename = `${projectName.toLowerCase().replace(/\s+/g, "-")}-report.html`;
+    const filename = `scene-${this.sceneId}-report.html`;
 
     downloadReport(this.generatedHTML, filename);
 
