@@ -1,0 +1,12 @@
+{
+  "sceneId": "la-scout",
+  "version": 1,
+  "unit": "meters",
+  "splatUrl": "/splats/scene-711be87d.spz",
+  "colliderUrl": "builtin://floor",
+  "assetCatalogUrl": "/scenes/la-scout.assets.json",
+  "worldBounds": {
+    "min": [-12, 0, -12],
+    "max": [12, 6, 12]
+  }
+}

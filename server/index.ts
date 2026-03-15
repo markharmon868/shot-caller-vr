@@ -110,8 +110,10 @@ async function createServer() {
 
   // ---------------------------------------------------------------------------
   // CopilotKit AG-UI runtime — powers the Scout Agent chat panel
+  // Must be mounted at root level because CopilotKit's internal Hono router
+  // uses basePath="/api/copilotkit" and needs to see the full URL path.
   // ---------------------------------------------------------------------------
-  app.use("/api/copilotkit", createCopilotKitEndpoint());
+  app.use(createCopilotKitEndpoint());
 
   app.post("/api/intake/threads", async (req, res) => {
     try {

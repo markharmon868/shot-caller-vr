@@ -43,11 +43,15 @@ export default defineConfig({
   plugins: [
     deduplicateThree(),
     ...(process.env.VITE_SKIP_MKCERT ? [] : [mkcert()]),
-    injectIWER({
-      device: "metaQuest3",
-      activation: "localhost",
-      verbose: true,
-    }),
+    ...(process.env.VITE_SKIP_IWER
+      ? []
+      : [
+          injectIWER({
+            device: "metaQuest3",
+            activation: "localhost",
+            verbose: true,
+          }),
+        ]),
     compileUIKit({ sourceDir: "ui", outputDir: "public/ui", verbose: true }),
   ],
   resolve: {

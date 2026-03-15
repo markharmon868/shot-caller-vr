@@ -6,9 +6,10 @@
  * - Script breakdown & location requirement extraction
  * - Reference image suggestions for visualization
  * - Production notes (parking, power, noise, permits)
+ * - Generating Gaussian Splats from scouted locations
  */
 
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { CopilotKit } from "@copilotkit/react-core";
 import { CopilotPopup } from "@copilotkit/react-ui";
 import { ScoutAgentActions } from "./ScoutAgentActions.js";
@@ -26,6 +27,8 @@ export interface ScoutAgentPanelProps {
   elementCount?: number;
   /** Callback to set location from agent suggestion */
   onLocationSelect?: (lat: number, lng: number, name: string) => void;
+  /** Callback to trigger Gaussian Splat generation */
+  onGenerateSplat?: () => void;
 }
 
 export function ScoutAgentPanel({
@@ -34,33 +37,47 @@ export function ScoutAgentPanel({
   splatUrl,
   elementCount,
   onLocationSelect,
+  onGenerateSplat,
 }: ScoutAgentPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [, setIsOpen] = useState(true);
 
   const handleSetOpen = useCallback((open: boolean) => {
     setIsOpen(open);
   }, []);
 
   return (
-    <CopilotKit runtimeUrl="/api/copilotkit">
+    <CopilotKit runtimeUrl="/api/copilotkit" enableInspector={false}>
       <ScoutAgentActions
         coordinates={coordinates}
         sceneName={sceneName}
         splatUrl={splatUrl}
         elementCount={elementCount}
         onLocationSelect={onLocationSelect}
+        onGenerateSplat={onGenerateSplat}
       />
       <CopilotPopup
+        defaultOpen={true}
+        instructions={[
+          "You are Shot Caller's Scout Agent — a fast, decisive location scout for film productions.",
+          "",
+          "MANDATORY BEHAVIOR — follow these rules exactly:",
+          "",
+          "1. NEVER ask clarifying questions. ALWAYS pick a specific location immediately and call setEditorLocation with exact lat/lng coordinates. Be decisive.",
+          "2. Keep ALL responses under 4 bullet points. Maximum 2 sentences per bullet. No paragraphs.",
+          "3. On EVERY user message, call at least one tool. Never respond with just text.",
+          "4. After calling setEditorLocation, IMMEDIATELY ask: 'Want me to generate a 3D walkthrough of this location?'",
+          "5. If the user says yes/generate/do it, call generateGaussianSplat right away.",
+          "6. Tool usage pattern: getLocationInfo for details, analyzeScript for scripts, setEditorLocation to move the map, generateGaussianSplat to create the 3D scene.",
+          "7. Be opinionated. Pick ONE best spot, not a list. Include exact coordinates.",
+          "",
+          "You know every major filming location in SF, LA, NYC, London, and Tokyo.",
+        ].join("\n")}
         labels={{
           title: "Scout Agent",
           initial:
-            "Hi! I'm your Scout Agent. I can help you with:\n\n" +
-            "📍 **Location Info** — Get details about filming locations\n" +
-            "📝 **Script Analysis** — Extract location needs from scripts\n" +
-            "🖼️ **Reference Images** — Suggest visual references\n" +
-            "🎬 **Production Notes** — Logistics, permits, and more\n\n" +
-            "How can I help with your production?",
-          placeholder: "Ask about locations, scripts, or production needs…",
+            "I'm your Scout Agent. Tell me about your scene and I'll find the perfect spot.\n\n" +
+            "Try: **\"I need a dramatic bridge shot for a chase scene\"**",
+          placeholder: "Describe your scene or paste a script excerpt…",
         }}
         onSetOpen={handleSetOpen}
         clickOutsideToClose={false}

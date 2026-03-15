@@ -25,6 +25,8 @@
     "@copilotkit/react-ui": "^1.54.0",
     "@copilotkit/runtime": "^1.54.0",
     "@iwsdk/core": "0.2.2",
+    "@langchain/core": "^1.1.32",
+    "@langchain/google-gauth": "^2.1.25",
     "@libsql/client": "^0.17.0",
     "@mastra/core": "^1.13.2",
     "@mastra/libsql": "^1.7.0",

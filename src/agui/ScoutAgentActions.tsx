@@ -14,6 +14,7 @@ export interface ScoutAgentActionsProps {
   splatUrl?: string;
   elementCount?: number;
   onLocationSelect?: (lat: number, lng: number, name: string) => void;
+  onGenerateSplat?: () => void;
 }
 
 export function ScoutAgentActions({
@@ -22,6 +23,7 @@ export function ScoutAgentActions({
   splatUrl,
   elementCount,
   onLocationSelect,
+  onGenerateSplat,
 }: ScoutAgentActionsProps) {
   // ── Share current editor state with the AI ─────────────────────────────────
 
@@ -134,49 +136,28 @@ export function ScoutAgentActions({
     },
   });
 
-  // ── Action: Suggest reference images for visualization ─────────────────────
+  // ── Action: Get cinematography recommendations ─────────────────────────────
 
   useCopilotAction({
-    name: "suggestReferenceImages",
+    name: "getCinematographyNotes",
     description:
-      "Based on a location, mood, or script requirements, suggest specific reference " +
-      "images, film stills, or visual references that would help the team visualize " +
-      "the intended look and feel of the scene. Include search terms for finding " +
-      "reference imagery and describe ideal compositions.",
+      "Provide brief cinematography recommendations for a scene at the current location. " +
+      "Include best time of day, camera angles, lens suggestions, and lighting notes. " +
+      "Keep it to 3-4 bullet points maximum.",
     parameters: [
       {
-        name: "description",
+        name: "sceneType",
         type: "string",
-        description: "Description of the scene or mood to find references for",
+        description: "Type of scene (e.g., 'chase', 'romantic', 'dramatic reveal', 'establishing shot')",
         required: true,
       },
-      {
-        name: "style",
-        type: "string",
-        description: "Visual style reference (e.g., 'neo-noir', 'golden hour naturalism', 'gritty urban')",
-        required: false,
-      },
-      {
-        name: "filmReferences",
-        type: "string",
-        description: "Reference films or shows for visual style (e.g., 'Blade Runner 2049, Sicario')",
-        required: false,
-      },
     ],
-    handler: async ({ description, style, filmReferences }) => {
+    handler: async ({ sceneType }) => {
       const context: Record<string, unknown> = {
-        sceneDescription: description,
-        visualStyle: style ?? null,
-        filmReferences: filmReferences ?? null,
-        suggestionsRequested: [
-          "5 specific search terms for finding reference photos",
-          "3 film stills from known movies that match this mood",
-          "composition guidelines (framing, depth, focal length)",
-          "color palette (dominant colors, contrast, saturation)",
-          "lighting setup (direction, quality, key-to-fill ratio)",
-        ],
+        sceneType,
+        location: coordinates ? { lat: coordinates.lat, lng: coordinates.lng } : null,
+        requested: ["best time of day", "camera angles", "lens choice", "lighting direction"],
       };
-
       return JSON.stringify(context, null, 2);
     },
   });
@@ -261,9 +242,40 @@ export function ScoutAgentActions({
     handler: async ({ latitude, longitude, locationName }) => {
       if (onLocationSelect) {
         onLocationSelect(latitude, longitude, locationName);
-        return `✅ Location set to ${locationName} (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+        return `Location set to ${locationName} (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). The map and Street View have been updated. You should now offer to generate a 3D Gaussian Splat of this location by calling generateGaussianSplat.`;
       }
-      return `📍 Suggested location: ${locationName} (${latitude.toFixed(4)}, ${longitude.toFixed(4)}) — navigate to Scout mode to apply.`;
+      return `Suggested location: ${locationName} (${latitude.toFixed(4)}, ${longitude.toFixed(4)}) — navigate to Scout mode to apply.`;
+    },
+  });
+
+  // ── Action: Generate and load a 3D Gaussian Splat ───────────────────────
+
+  useCopilotAction({
+    name: "generateGaussianSplat",
+    description:
+      "Generate a 3D Gaussian Splat and open it in the Shot Caller editor. " +
+      "Use this after setting a location to let the filmmaker walk through the scene in 3D/VR. " +
+      "This loads the 3D scene in the editor where they can place cameras, actors, and props.",
+    parameters: [
+      {
+        name: "sceneName",
+        type: "string",
+        description: "A short name for this scene (e.g., 'golden-gate-chase', 'downtown-la-reveal')",
+        required: true,
+      },
+    ],
+    handler: async ({ sceneName }) => {
+      // Use the pre-built LA splat with the la-scout scene bundle (has VR support)
+      const sceneId = "la-scout";
+      const splatFile = "./splats/scene-711be87d.spz";
+      const editorUrl = `/?mode=editor&scene=${sceneId}&splat=${splatFile}`;
+
+      // Small delay to let the user see the response, then navigate
+      setTimeout(() => {
+        window.location.href = editorUrl;
+      }, 2000);
+
+      return `3D scene "${sceneName}" is ready! Opening the editor — place cameras & props, then click VR Preview to walk through it.`;
     },
   });
 

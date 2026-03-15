@@ -136,7 +136,7 @@ function initMap(): void {
   loadRecentJobs();
 }
 
-function setLocation(lat: number, lng: number, source: string): void {
+export function setLocation(lat: number, lng: number, source: string): void {
   console.log(`[Scout] Location set from ${source}: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
   pendingLat = lat;
   pendingLng = lng;

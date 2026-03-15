@@ -30,12 +30,21 @@ async function start(): Promise<void> {
 
   if (mode === "scout") {
     renderScoutShell();
-    const { startScout, onGenerateClick } = await import("./scout/ScoutApp.js");
+    const { startScout, onGenerateClick, setLocation } = await import("./scout/ScoutApp.js");
     (window as unknown as Record<string, unknown>).__scoutGenerate = onGenerateClick;
     startScout();
 
-    // Mount CopilotKit Scout Agent AG-UI panel
-    await initScoutAgentPanel();
+    // Mount CopilotKit Scout Agent AG-UI panel with map + generate bridge
+    await initScoutAgentPanel({
+      onLocationSelect: (lat, lng, name) => {
+        console.log(`[Scout Agent] Setting location: ${name} (${lat}, ${lng})`);
+        setLocation(lat, lng, "scout_agent");
+      },
+      onGenerateSplat: () => {
+        console.log("[Scout Agent] Triggering splat generation");
+        onGenerateClick();
+      },
+    });
     return;
   }
 
