@@ -41,14 +41,14 @@ function toast(message: string, type: "info" | "success" | "error" | "warning" =
   }, 3500);
 }
 
-// ── Jobs: Cinematic VR transition overlay ──
+// ── Jobs: Cinematic transition overlay ──
 
-function showVRTransition(targetUrl: string): void {
+function showVRTransition(targetUrl: string, message = "Loading Editor"): void {
   const overlay = document.createElement("div");
   overlay.className = "vr-transition-overlay";
   overlay.innerHTML = `
     <div class="vr-transition-ring"></div>
-    <div class="vr-transition-text">Entering Scene</div>
+    <div class="vr-transition-text">${message}</div>
   `;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add("active"));
@@ -325,11 +325,21 @@ class CreateApp {
       await this.waitForCompletion(sceneId);
       this.setProgress(100);
 
-      // Done
+      // Done — seamlessly transition to editor
       this.generatedSceneId = sceneId;
       this.statusCard.style.display = "none";
-      this.showVRSection(sceneId);
-      toast("World ready — enter VR or open the editor", "success");
+      toast("World generated successfully", "success");
+
+      // Auto-navigate to editor with cinematic transition
+      const editorUrl = new URL(window.location.href);
+      editorUrl.searchParams.set("mode", "editor");
+      editorUrl.searchParams.set("scene", sceneId);
+      editorUrl.searchParams.set("newScene", "1"); // Signal first-time load
+
+      // Brief pause to let user see success, then transition
+      setTimeout(() => {
+        showVRTransition(editorUrl.toString());
+      }, 800);
     } catch (err) {
       this.statusCard.style.display = "none";
       const msg = err instanceof Error ? err.message : "An unexpected error occurred.";

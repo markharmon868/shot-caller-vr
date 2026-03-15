@@ -310,6 +310,28 @@ class EditorApp {
         this.container.classList.remove("placing");
       }
     });
+
+    // Onboarding overlay — show when arriving from world creation
+    const onboardingOverlay = document.getElementById("onboarding-overlay");
+    const onboardingCloseBtn = document.getElementById("onboarding-close-btn");
+    if (onboardingOverlay && onboardingCloseBtn) {
+      onboardingCloseBtn.addEventListener("click", () => {
+        onboardingOverlay.classList.remove("visible");
+        // Remove the newScene parameter from URL to prevent showing again on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete("newScene");
+        window.history.replaceState({}, "", url);
+      });
+
+      // Show onboarding if newScene=1 parameter is present
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("newScene") === "1") {
+        // Brief delay to let scene start loading, then show onboarding
+        setTimeout(() => {
+          onboardingOverlay.classList.add("visible");
+        }, 600);
+      }
+    }
   }
 
   // ── GLTF library ───────────────────────────────────────────────────────────

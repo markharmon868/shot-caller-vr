@@ -70,6 +70,123 @@ const editorStyles = `
 
   #keyboard-hint.visible { display: block; }
 
+  /* Onboarding overlay */
+  #onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fade-in 0.4s ease-out;
+  }
+
+  #onboarding-overlay.visible { display: flex; }
+
+  .onboarding-card {
+    max-width: 540px;
+    background: rgba(20, 20, 20, 0.98);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+
+  .onboarding-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: var(--sp-3);
+  }
+
+  .onboarding-title {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    line-height: var(--lh-tight);
+    margin-bottom: var(--sp-3);
+    color: var(--text-1);
+  }
+
+  .onboarding-subtitle {
+    font-size: var(--text-base);
+    font-weight: 300;
+    line-height: var(--lh-relaxed);
+    color: var(--text-2);
+    margin-bottom: var(--sp-5);
+  }
+
+  .onboarding-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-6);
+  }
+
+  .onboarding-step {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: flex-start;
+  }
+
+  .onboarding-step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: rgba(232, 160, 32, 0.12);
+    border: 1px solid rgba(232, 160, 32, 0.4);
+    border-radius: 50%;
+    color: var(--accent);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .onboarding-step-content h3 {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-1);
+    margin-bottom: var(--sp-1);
+  }
+
+  .onboarding-step-content p {
+    font-size: var(--text-sm);
+    color: var(--text-3);
+    line-height: var(--lh-relaxed);
+  }
+
+  .onboarding-actions {
+    display: flex;
+    gap: var(--sp-3);
+  }
+
+  .onboarding-btn-primary {
+    flex: 1;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius-base);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .onboarding-btn-primary:hover { opacity: 0.85; }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   /* Bottombar */
   #bottombar {
     display: flex;
@@ -268,6 +385,43 @@ export function renderEditorShell(): void {
         </div>
         <div class="topbar-spacer"></div>
         <span id="element-count">0 elements</span>
+      </div>
+
+      <!-- ONBOARDING OVERLAY -->
+      <div id="onboarding-overlay">
+        <div class="onboarding-card">
+          <span class="onboarding-badge">Welcome</span>
+          <h2 class="onboarding-title">Your world is ready</h2>
+          <p class="onboarding-subtitle">Start blocking your scene by placing cameras, lights, and crew positions. When you're ready, step inside with VR.</p>
+
+          <div class="onboarding-steps">
+            <div class="onboarding-step">
+              <div class="onboarding-step-number">1</div>
+              <div class="onboarding-step-content">
+                <h3>Place cameras</h3>
+                <p>Click the camera icon in the left panel, then click in the scene to place cameras. Configure lens and movement for each shot.</p>
+              </div>
+            </div>
+            <div class="onboarding-step">
+              <div class="onboarding-step-number">2</div>
+              <div class="onboarding-step-content">
+                <h3>Build your sequence</h3>
+                <p>Use Sequence Mode to number your shots in order. This creates your shot list for export.</p>
+              </div>
+            </div>
+            <div class="onboarding-step">
+              <div class="onboarding-step-number">3</div>
+              <div class="onboarding-step-content">
+                <h3>Preview in VR</h3>
+                <p>Click "Preview in VR" to step inside your scene. Walk through your blocking and review each shot in immersive 3D.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="onboarding-actions">
+            <button id="onboarding-close-btn" class="onboarding-btn-primary">Start Blocking</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
