@@ -74,8 +74,10 @@ class EditorApp {
     const restored = this.state.loadLocal();
 
     const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
+    const params = new URLSearchParams(window.location.search);
     const spzUrl =
-      new URLSearchParams(window.location.search).get("spz") ??
+      params.get("splat") ??
+      params.get("spz") ??
       (restored ? this.state.getSplatUrl() : null) ??
       DEFAULT_SPLAT;
     (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
@@ -234,6 +236,29 @@ class EditorApp {
       }
     });
 
+    // Splat vertical offset
+    const offsetSlider = document.getElementById("splat-offset-y") as HTMLInputElement;
+    const offsetLabel = document.getElementById("splat-offset-y-val")!;
+    offsetSlider.addEventListener("input", () => {
+      const val = parseFloat(offsetSlider.value);
+      offsetLabel.textContent = val.toFixed(2);
+      this.state.splatOffset[1] = val;
+      this.applySplatOffset();
+    });
+    document.getElementById("splat-offset-reset")!.addEventListener("click", () => {
+      this.state.splatOffset = [0, 0, 0];
+      offsetSlider.value = "0";
+      offsetLabel.textContent = "0.00";
+      this.applySplatOffset();
+    });
+    document.getElementById("splat-offset-toggle")!.addEventListener("click", () => {
+      const panel = document.getElementById("splat-offset-panel")!;
+      const toggle = document.getElementById("splat-offset-toggle")!;
+      const open = panel.style.display === "none";
+      panel.style.display = open ? "block" : "none";
+      toggle.textContent = (open ? "▼" : "▶") + " Adjust Height";
+    });
+
     // Save / Export
     document.getElementById("save-scene-btn")!.addEventListener("click", () => {
       this.state.saveToKV();
@@ -241,7 +266,7 @@ class EditorApp {
     });
     document.getElementById("preview-vr-btn")!.addEventListener("click", () => {
       this.state.saveToKV();
-      window.location.href = `/?mode=stage4-xr&scene=${this.state.id}`;
+      window.location.href = `/?mode=vr&scene=${this.state.id}`;
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();
@@ -676,6 +701,8 @@ class EditorApp {
 
         this.scene.add(splat);
         this.splat = splat;
+        this.applySplatOffset();
+        this.syncOffsetSliders();
       }
 
       this.setStatus(`Scene loaded — start placing elements`);
@@ -686,6 +713,23 @@ class EditorApp {
     } finally {
       this.hideLoading();
     }
+  }
+
+  /** Apply stored Y offset on top of the base World Labs position correction. */
+  private applySplatOffset(): void {
+    if (!this.splat) return;
+    const oy = this.state.splatOffset[1];
+    const baseY = this.state.getSplatUrl().includes("sensai") ? 0 : 2.887;
+    this.splat.position.y = baseY + oy;
+  }
+
+  /** Sync the Y slider to the saved offset (called after scene restore). */
+  private syncOffsetSliders(): void {
+    const oy = this.state.splatOffset[1];
+    const slider = document.getElementById("splat-offset-y") as HTMLInputElement | null;
+    const label = document.getElementById("splat-offset-y-val");
+    if (slider) slider.value = String(oy);
+    if (label) label.textContent = Number(oy).toFixed(2);
   }
 
   private loadPanorama(url: string): Promise<void> {

@@ -12,11 +12,14 @@ import { createElementById } from "./editor/SceneState.js";
 import type { ProductionElement } from "./editor/elements/ProductionElement.js";
 import { GltfElement } from "./editor/elements/GltfElement.js";
 
-const SCENE_STORAGE_KEY = "shot-caller-scene-demo";
+function getSceneStorageKey(): string {
+  const sceneId = new URL(window.location.href).searchParams.get("scene") ?? "demo";
+  return `shot-caller-scene-${sceneId}`;
+}
 
 /** Load editor elements from localStorage and add their groups to the scene */
 function loadEditorElements(scene: THREE.Scene): ProductionElement[] {
-  const raw = localStorage.getItem(SCENE_STORAGE_KEY);
+  const raw = localStorage.getItem(getSceneStorageKey());
   if (!raw) return [];
   try {
     const data = JSON.parse(raw) as { elements?: Array<{ id: string; type: string; name: string; position: [number, number, number]; rotationY: number; scale?: [number, number, number]; properties: Record<string, unknown> }> };

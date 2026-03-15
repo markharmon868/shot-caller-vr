@@ -1,65 +1,70 @@
-# Data Pipeline — Street View → World Model
+# Data Pipeline — Street View → Marble Labs → .spz
 
-Pipeline for fetching Street View imagery, optionally expanding it with Nano Banana 2.5, and preparing input for world model generation.
+Fetches multi-angle Street View imagery for a real-world location and submits it to Marble Labs to generate a Gaussian splat (.spz) for use in the Shot Caller editor.
 
 ## Flow
 
 ```
-Street View API  →  Raw Images  →  [Nano Banana Expansion]  →  Enhanced Images  →  World Model (Marble/Luma)  →  .spz  →  VR App
+Google Street View API  →  24 images (8 headings × 3 pitches)  →  Marble Labs API  →  .spz  →  Editor
 ```
 
 ## Structure
 
 | Path | Purpose |
 |------|---------|
-| `street-view/` | Fetch images from Google Street View API |
-| `image-expansion/` | Expand/outpaint via Nano Banana 2 (Replicate) |
-| `world-model/` | Images → Gaussian splat (Marble/Luma stub) |
-| `data/raw/` | Raw Street View downloads (gitignored) |
-| `data/expanded/` | Nano Banana–expanded images (gitignored) |
-| `data/output/` | Final images for world model tools (gitignored) |
+| `street-view/index.ts` | Fetch multi-angle images from Google Street View Static API |
+| `world-model/marble.ts` | Marble Labs API client — submit images, poll, download .spz |
+| `scripts/fetch-street-view.ts` | CLI: fetch images for a lat/lng |
+| `scripts/generate-splat.ts` | CLI: submit to Marble Labs, download .spz |
+| `scripts/run-pipeline.ts` | CLI: full pipeline end-to-end |
+| `data/raw/` | Street View images (gitignored) |
 | `.env` (project root) | API keys — copy from `.env.example`, never commit |
 
-## Prerequisites
+## API Keys Required
 
-- **Google Cloud** API key with Street View Static API and/or Street View Tiles API enabled
-- **Nano Banana 2.5** access (Replicate, Vertex AI, or Google AI Studio)
-- Node 20.19+
+| Key | Where to get it |
+|-----|----------------|
+| `GOOGLE_MAPS_API_KEY` | Google Cloud Console — enable "Street View Static API" |
+| `MARBLE_LABS_API_KEY` | Your Marble Labs account |
 
 ## Setup
 
-1. Copy the env template: `cp .env.example .env`
-2. Add your keys to `.env` (never commit `.env`)
-3. Install deps: `npm install`
+```bash
+cp .env.example .env
+# Add GOOGLE_MAPS_API_KEY and MARBLE_LABS_API_KEY to .env
+```
 
 ## Usage
 
 ```bash
-# Fetch Street View images for a location
-npx tsx pipeline/scripts/fetch-street-view.ts --lat 40.7128 --lng -74.0060
+# Full pipeline: fetch Street View → submit to Marble → download .spz
+npm run pipeline:run -- --lat 34.0522 --lng -118.2437
 
-# Expand images with Nano Banana 2 (Replicate)
-# --skip: copy raw to expanded without API call (when REPLICATE_API_TOKEN not set)
-# --aspect 16:9|21:9|match_input_image: expansion aspect (default 16:9)
-npx tsx pipeline/scripts/expand-images.ts [--skip] [--aspect 16:9]
+# Custom output path
+npm run pipeline:run -- --lat 34.0522 --lng -118.2437 --out public/splats/hollywood.spz
 
-# Prepare output for world model (copy expanded/raw → output/)
-npx tsx pipeline/scripts/prepare-output.ts
-
-# Run full pipeline: fetch → expand → output
-npx tsx pipeline/scripts/run-pipeline.ts --lat 40.7128 --lng -74.0060
-
-# Multi-heading fetch (4 cardinal directions by default)
-npx tsx pipeline/scripts/fetch-street-view.ts --lat 40.7128 --lng -74.0060 --headings 0,90,180,270
-
-# World model generation (stub — manual workflow until API integration)
+# Or run steps individually:
+npx tsx pipeline/scripts/fetch-street-view.ts --lat 34.0522 --lng -118.2437
 npx tsx pipeline/scripts/generate-splat.ts
 ```
 
-## Loading Your Splat in the App
+## Image Coverage
 
-After generating a .spz (via Marble, Luma, or other tools), place it in `public/splats/` and load it:
+The Street View fetcher captures 24 images per location by default:
+- **8 headings**: 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°
+- **3 pitches**: -30° (down), 0° (level), +30° (up)
+- **Size**: 640×640 per image (free tier max)
+
+More coverage = better 3D reconstruction. To get higher resolution images (1280×1280), you need a Google Maps API key with URL signing enabled.
+
+## Loading Your Splat in the Editor
+
+Place your `.spz` in `public/splats/` and load it:
 
 ```
-https://localhost:8082/?splat=./splats/your-generated.spz
+https://localhost:8082/?splat=./splats/your-scene.spz
 ```
+
+## ⚠️ API Endpoint Note
+
+`pipeline/world-model/marble.ts` contains scaffolded Marble Labs endpoints based on standard REST conventions. Confirm the exact paths and response shapes with your Marble Labs API docs before running `generate-splat.ts`.

@@ -58,6 +58,16 @@ const editorStyles = `
   }
 
   .spz-row { display: flex; gap: 6px; }
+  .splat-offset-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #9d8cbf;
+  }
+  .splat-offset-row label { width: 10px; flex-shrink: 0; }
+  .splat-offset-row input[type=range] { flex: 1; accent-color: #7c5cbf; }
+  .splat-offset-row span { width: 32px; text-align: right; font-size: 9px; color: #6b5a8a; font-variant-numeric: tabular-nums; }
   #spz-url-input {
     flex: 1;
     background: #1a0d33;
@@ -350,6 +360,21 @@ export function renderEditorShell(): void {
             <input id="spz-url-input" type="text" placeholder=".spz or image URL…" />
           </div>
           <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Scene</button>
+
+          <!-- Splat vertical offset (collapsible) -->
+          <div style="margin-top:8px;">
+            <button id="splat-offset-toggle" class="btn" style="font-size:9px;padding:3px 8px;width:100%;text-align:left;">
+              ▶ Adjust Height
+            </button>
+            <div id="splat-offset-panel" style="display:none;padding-top:8px;">
+              <div class="splat-offset-row">
+                <label>Y</label>
+                <input id="splat-offset-y" type="range" min="-10" max="10" step="0.05" value="0" />
+                <span id="splat-offset-y-val">0.00</span>
+              </div>
+              <button id="splat-offset-reset" class="btn" style="margin-top:4px;font-size:9px;padding:3px 8px;">Reset</button>
+            </div>
+          </div>
         </div>
 
         <!-- Elements -->
@@ -483,6 +508,49 @@ export function renderReviewShell(): void {
   `;
 }
 
+export function renderVrShell(): void {
+  removeEditorStyle();
+  document.body.className = "";
+  document.title = "Shot Caller — VR Preview";
+  document.body.style.cssText = "margin:0;padding:0;background:#000;overflow:hidden;";
+  document.body.innerHTML = `
+    <style>
+      #vr-scene { position:fixed;inset:0;z-index:0; }
+      #vr-overlay {
+        position:fixed;top:16px;left:16px;z-index:10;
+        display:flex;flex-direction:column;gap:8px;
+        font-family:system-ui,sans-serif;
+      }
+      #vr-enter-btn {
+        padding:10px 20px;border-radius:8px;border:none;
+        background:linear-gradient(135deg,#f59e0b,#ef4444);
+        color:#111;font-size:14px;font-weight:700;cursor:pointer;
+        letter-spacing:0.5px;transition:opacity 0.15s;min-width:130px;
+      }
+      #vr-enter-btn:disabled { opacity:0.4;cursor:not-allowed; }
+      #vr-enter-btn:not(:disabled):hover { opacity:0.85; }
+      #vr-back-link {
+        display:inline-block;padding:8px 14px;border-radius:8px;
+        background:rgba(13,15,20,0.8);border:1px solid #1e2330;
+        color:#9ca3af;font-size:12px;text-decoration:none;
+        transition:color 0.15s,border-color 0.15s;text-align:center;
+      }
+      #vr-back-link:hover { color:#e5e7eb;border-color:#374151; }
+      #vr-error {
+        display:none;padding:10px 14px;border-radius:8px;
+        background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
+        color:#f87171;font-size:12px;max-width:260px;line-height:1.4;
+      }
+    </style>
+    <div id="vr-scene"></div>
+    <div id="vr-overlay">
+      <button id="vr-enter-btn" disabled>Loading…</button>
+      <a id="vr-back-link" href="/">← Editor</a>
+      <div id="vr-error"></div>
+    </div>
+  `;
+}
+
 export function renderIntakeShell(): void {
   removeEditorStyle();
   document.body.className = "shot-caller-body-intake";
@@ -510,6 +578,269 @@ export function renderHeadsetEmptyShell(): void {
           </p>
         </div>
       </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Scout shell — Google Maps location picker
+// ---------------------------------------------------------------------------
+
+export function renderScoutShell(): void {
+  document.body.innerHTML = `
+    <div id="app-root" style="width:100vw;height:100vh;background:#0d0f14;font-family:system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        #scout-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 20px;
+          height: 52px;
+          background: #0d0f14;
+          border-bottom: 1px solid #1e2330;
+          flex-shrink: 0;
+          z-index: 10;
+        }
+        #scout-topbar h1 {
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #f59e0b;
+        }
+        .scout-nav-link {
+          color: #6b7280;
+          font-size: 12px;
+          text-decoration: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          border: 1px solid #1e2330;
+          transition: color 0.15s, border-color 0.15s;
+        }
+        .scout-nav-link:hover { color: #e5e7eb; border-color: #374151; }
+
+        #scout-body {
+          display: flex;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        #scout-map-wrap {
+          flex: 1;
+          height: 100%;
+          position: relative;
+        }
+        #scout-map {
+          width: 100%;
+          height: 100%;
+        }
+        #scout-search-input:focus {
+          border-color: #f59e0b;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 0 2px rgba(245,158,11,0.2);
+        }
+
+        #scout-sidebar {
+          width: 360px;
+          min-width: 360px;
+          display: flex;
+          flex-direction: column;
+          background: #0d0f14;
+          border-left: 1px solid #1e2330;
+        }
+
+        #scout-streetview {
+          width: 100%;
+          height: 240px;
+          background: #111827;
+          flex-shrink: 0;
+        }
+
+        #scout-info {
+          padding: 16px;
+          border-bottom: 1px solid #1e2330;
+        }
+        #scout-info-label {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #4b5563;
+          margin-bottom: 6px;
+        }
+        #scout-coords {
+          font-size: 13px;
+          color: #9ca3af;
+          font-variant-numeric: tabular-nums;
+        }
+        #scout-hint {
+          margin-top: 6px;
+          font-size: 11px;
+          color: #374151;
+        }
+
+        #scout-actions {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          flex: 1;
+        }
+
+        #scout-generate-btn {
+          width: 100%;
+          padding: 14px;
+          border-radius: 10px;
+          border: none;
+          background: linear-gradient(135deg, #f59e0b, #ef4444);
+          color: #111;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+          transition: opacity 0.15s;
+        }
+        #scout-generate-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        #scout-generate-btn:not(:disabled):hover { opacity: 0.88; }
+
+        #scout-status {
+          display: none;
+          padding: 12px 14px;
+          border-radius: 8px;
+          font-size: 12px;
+          line-height: 1.5;
+          background: rgba(245,158,11,0.08);
+          border: 1px solid rgba(245,158,11,0.2);
+          color: #fbbf24;
+        }
+        #scout-status[data-type="error"] {
+          background: rgba(239,68,68,0.08);
+          border-color: rgba(239,68,68,0.25);
+          color: #f87171;
+        }
+        #scout-status[data-type="done"] {
+          background: rgba(16,185,129,0.08);
+          border-color: rgba(16,185,129,0.25);
+          color: #34d399;
+        }
+
+        #scout-done-panel {
+          display: none;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .scout-done-label {
+          font-size: 12px;
+          color: #34d399;
+          font-weight: 600;
+        }
+        .scout-open-btn {
+          display: block;
+          text-align: center;
+          padding: 13px;
+          border-radius: 10px;
+          background: #059669;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 700;
+          text-decoration: none;
+          transition: opacity 0.15s;
+        }
+        .scout-open-btn:hover { opacity: 0.88; }
+        .scout-marble-link {
+          display: block;
+          text-align: center;
+          font-size: 11px;
+          color: #6b7280;
+          text-decoration: none;
+        }
+        .scout-marble-link:hover { color: #9ca3af; }
+
+        #scout-recent {
+          padding: 0 16px 16px;
+          border-top: 1px solid #1e2330;
+          overflow-y: auto;
+        }
+        .scout-recent-title {
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #374151;
+          padding: 12px 0 8px;
+        }
+        .scout-recent-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #1e2330;
+          font-size: 11px;
+          color: #6b7280;
+        }
+        .scout-recent-item a {
+          color: #f59e0b;
+          text-decoration: none;
+          font-size: 11px;
+          font-weight: 600;
+        }
+        .scout-recent-item a:hover { color: #fbbf24; }
+
+        #scout-error {
+          display: none;
+          margin: 16px;
+          padding: 12px;
+          background: rgba(239,68,68,0.08);
+          border: 1px solid rgba(239,68,68,0.25);
+          border-radius: 8px;
+          color: #f87171;
+          font-size: 12px;
+        }
+      </style>
+
+      <div id="scout-topbar">
+        <h1>Shot Caller — Location Scout</h1>
+        <a class="scout-nav-link" href="/?mode=editor">Open Editor</a>
+      </div>
+
+      <div id="scout-body">
+        <div id="scout-map-wrap" style="position:relative;flex:1;height:100%;">
+          <div id="scout-map" style="width:100%;height:100%;"></div>
+          <div id="scout-search-wrap" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;width:min(480px,calc(100% - 32px));">
+            <input id="scout-search-input" type="text" placeholder="Search address or location..."
+              style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid #374151;background:#111827;color:#f3f4f6;font-size:13px;outline:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);" />
+          </div>
+        </div>
+
+        <div id="scout-sidebar">
+          <div id="scout-streetview"></div>
+
+          <div id="scout-info">
+            <div id="scout-info-label">Selected Location</div>
+            <div id="scout-coords" style="color:#f59e0b;font-weight:600;">← Click the map to pick a location</div>
+            <div id="scout-hint">Generate is locked until you click the map</div>
+          </div>
+
+          <div id="scout-actions">
+            <button id="scout-generate-btn" disabled onclick="window.__scoutGenerate()">
+              Generate Gaussian Splat
+            </button>
+            <div id="scout-status"></div>
+            <div id="scout-done-panel"></div>
+          </div>
+
+          <div id="scout-recent">
+            <div class="scout-recent-title">Recent Scenes</div>
+            <div id="scout-recent-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="scout-error"></div>
     </div>
   `;
 }

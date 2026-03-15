@@ -357,6 +357,34 @@ async function createServer() {
 
   app.get("/api/intake/threads/:threadId", buildThreadState);
 
+  // ---------------------------------------------------------------------------
+  // Pipeline: Street View → Marble Labs → .spz
+  // ---------------------------------------------------------------------------
+  const { startPipelineJob, getJob, listJobs } = await import("./pipeline/manager.js");
+
+  // POST /api/pipeline/start  { lat, lng }  → { jobId }
+  app.post("/api/pipeline/start", (req: Request, res: Response) => {
+    const { lat, lng } = req.body as { lat?: unknown; lng?: unknown };
+    if (typeof lat !== "number" || typeof lng !== "number") {
+      res.status(400).json({ error: "lat and lng must be numbers" });
+      return;
+    }
+    const jobId = startPipelineJob(lat, lng);
+    res.json({ jobId });
+  });
+
+  // GET /api/pipeline/status/:jobId → PipelineJob
+  app.get("/api/pipeline/status/:jobId", (req: Request, res: Response) => {
+    const job = getJob(req.params.jobId);
+    if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+    res.json(job);
+  });
+
+  // GET /api/pipeline/jobs → PipelineJob[]  (most recent first)
+  app.get("/api/pipeline/jobs", (_req: Request, res: Response) => {
+    res.json(listJobs());
+  });
+
   return app;
 }
 

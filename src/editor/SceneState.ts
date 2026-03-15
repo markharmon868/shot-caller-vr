@@ -11,6 +11,7 @@ import { GltfElement } from "./elements/GltfElement.js";
 export interface SceneData {
   id: string;
   splatUrl: string;
+  splatOffset?: [number, number, number];
   elements: ElementData[];
   savedAt: string;
 }
@@ -73,6 +74,7 @@ export function createElement(type: string): ProductionElement {
 export class SceneState {
   private sceneId: string;
   private splatUrl = "";
+  splatOffset: [number, number, number] = [0, 0, 0];
   readonly elements = new Map<string, ProductionElement>();
 
   constructor(private scene: THREE.Scene) {
@@ -109,6 +111,7 @@ export class SceneState {
     return {
       id: this.sceneId,
       splatUrl: this.splatUrl,
+      splatOffset: [...this.splatOffset],
       elements: Array.from(this.elements.values()).map((el) => el.serialize()),
       savedAt: new Date().toISOString(),
     };
@@ -126,6 +129,7 @@ export class SceneState {
 
     this.sceneId = data.id;
     this.splatUrl = data.splatUrl;
+    this.splatOffset = data.splatOffset ?? [0, 0, 0];
     this.updateUrl();
 
     for (const ed of data.elements) {
@@ -272,7 +276,7 @@ export class SceneState {
 
     // sceneStore reads from key "shot-caller:elements:{sceneId}"
     localStorage.setItem(
-      `shot-caller:elements:demo`,
+      `shot-caller:elements:${this.sceneId}`,
       JSON.stringify(bundleElements)
     );
   }

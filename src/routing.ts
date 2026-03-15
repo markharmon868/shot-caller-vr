@@ -1,10 +1,8 @@
 export type AppMode =
+  | "scout"
   | "intake"
   | "editor"
-  | "stage4-xr"
-  | "stage5-xr"
-  | "viewer"
-  | "export"
+  | "vr"
   | "headset-empty";
 
 export function isHeadsetBrowser(userAgent: string): boolean {
@@ -20,26 +18,20 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   const headset = isHeadsetBrowser(userAgent);
   const sceneAvailable = hasSceneId(url);
 
-  if (
-    explicitMode === "intake"
-    || explicitMode === "editor"
-    || explicitMode === "stage4-xr"
-    || explicitMode === "stage5-xr"
-    || explicitMode === "viewer"
-    || explicitMode === "export"
-  ) {
-    if ((explicitMode === "stage4-xr" || explicitMode === "stage5-xr") && headset && !sceneAvailable) {
-      return "headset-empty";
-    }
-    return explicitMode;
+  if (explicitMode === "scout") return "scout";
+  if (explicitMode === "intake") return "intake";
+  if (explicitMode === "editor") return "editor";
+  // Accept both "vr" and legacy "stage4-xr" / "stage5-xr"
+  if (explicitMode === "vr" || explicitMode === "stage4-xr" || explicitMode === "stage5-xr") {
+    if (headset && !sceneAvailable) return "headset-empty";
+    return "vr";
   }
 
-  if (headset && sceneAvailable) {
-    return "stage4-xr";
-  }
-  if (headset && !sceneAvailable) {
-    return "headset-empty";
-  }
-  // Desktop: always land in editor (intake is only reachable via ?mode=intake)
-  return "editor";
+  if (headset && sceneAvailable) return "vr";
+  if (headset && !sceneAvailable) return "headset-empty";
+
+  // Desktop default: scout landing page
+  // Go directly to editor if a splat or scene param is present
+  if (url.searchParams.get("splat") || sceneAvailable) return "editor";
+  return "scout";
 }

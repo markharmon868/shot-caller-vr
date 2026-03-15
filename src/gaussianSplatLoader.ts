@@ -307,6 +307,17 @@ export class ReviewSceneLoader {
       this.splat.position.y = 2.887;
     }
 
+    // Apply editor's saved vertical offset so VR floor matches the editor view
+    try {
+      const sceneId = new URL(window.location.href).searchParams.get("scene") ?? "demo";
+      const raw = localStorage.getItem(`shot-caller-scene-${sceneId}`);
+      if (raw) {
+        const saved = JSON.parse(raw) as { splatOffset?: [number, number, number] };
+        const oy = saved.splatOffset?.[1] ?? 0;
+        if (oy !== 0) this.splat.position.y += oy;
+      }
+    } catch { /* ignore */ }
+
     this.root.add(this.splat);
 
     this.splatAnimator = new GaussianSplatAnimator(this.splat);
