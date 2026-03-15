@@ -1,0 +1,28 @@
+# Development files
+node_modules
+.git
+.vscode
+*.log
+.env.local
+.env.*.local
+
+# Source files (we deploy the built dist)
+src
+server
+pipeline
+shared
+
+# Build artifacts (keep dist for deployment)
+.vite
+.tsbuildinfo
+
+# Documentation and tests
+docs
+__tests__
+*.test.ts
+*.spec.ts
+
+# Editor configs
+.editorconfig
+.prettierrc
+.eslintrc*

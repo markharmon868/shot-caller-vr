@@ -389,6 +389,9 @@ async function createServer() {
   return app;
 }
 
+// Export for Vercel serverless function
+export { createServer };
+
 async function main() {
   validateServerConfig();
   const app = await createServer();
@@ -397,7 +400,10 @@ async function main() {
   });
 }
 
-void main().catch((error) => {
-  console.error("[shot-caller] failed to start intake server", error);
-  process.exitCode = 1;
-});
+// Only run main() if this is the entry point (not when imported by Vercel)
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('server/index.ts')) {
+  void main().catch((error) => {
+    console.error("[shot-caller] failed to start intake server", error);
+    process.exitCode = 1;
+  });
+}
