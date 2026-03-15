@@ -1738,3 +1738,454 @@ body {
 .cursor-gizmo {
   cursor: pointer !important;
 }
+
+/* ═══════════════════════════════════════════════════════
+   VOL. 2 — PRODUCT & EXPERIENCE VISIONARIES
+   Jobs · Atkinson · Kare · Norman
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Jobs: Cinematic VR Handoff Transition ── */
+.vr-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.vr-transition-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vr-transition-text {
+  color: #fbbf24;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
+}
+
+.vr-transition-overlay.active .vr-transition-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.vr-transition-ring {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(251, 191, 36, 0.15);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+  animation: shot-caller-spin 0.8s linear infinite;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.5s;
+}
+
+.vr-transition-overlay.active .vr-transition-ring {
+  opacity: 1;
+}
+
+/* ── Jobs: Hero Entrance Animation ── */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-badge {
+  animation: heroFadeUp 0.6s ease both;
+  animation-delay: 0.1s;
+}
+
+.home-headline {
+  animation: heroFadeUp 0.7s ease both;
+  animation-delay: 0.2s;
+}
+
+.home-subhead {
+  animation: heroFadeUp 0.7s ease both;
+  animation-delay: 0.35s;
+}
+
+.home-hero-actions {
+  animation: heroFadeUp 0.7s ease both;
+  animation-delay: 0.5s;
+}
+
+/* ── Atkinson: Card Hover Lifts ── */
+.home-step,
+.home-feature,
+.create-card {
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.home-step:hover,
+.home-feature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.create-card:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+/* ── Atkinson: Dropzone Delight ── */
+@keyframes dropzonePulse {
+  0%, 100% {
+    border-color: rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.08);
+  }
+}
+
+.create-dropzone.drag-over {
+  animation: dropzonePulse 1s ease infinite;
+}
+
+/* ── Atkinson: Thumbnail Entrance ── */
+@keyframes thumbPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.create-preview-thumb {
+  animation: thumbPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.create-preview-thumb:nth-child(1) { animation-delay: 0s; }
+.create-preview-thumb:nth-child(2) { animation-delay: 0.04s; }
+.create-preview-thumb:nth-child(3) { animation-delay: 0.08s; }
+.create-preview-thumb:nth-child(4) { animation-delay: 0.12s; }
+.create-preview-thumb:nth-child(5) { animation-delay: 0.16s; }
+.create-preview-thumb:nth-child(6) { animation-delay: 0.2s; }
+.create-preview-thumb:nth-child(n+7) { animation-delay: 0.24s; }
+
+/* ── Atkinson: VR Ready Celebration ── */
+@keyframes vrReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.create-vr-section {
+  animation: vrReveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.create-vr-check {
+  animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.2s;
+}
+
+/* ── Atkinson: Button Press Feedback ── */
+.home-btn-primary:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  opacity: 0.85;
+}
+
+.home-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* ── Atkinson: Generate Button Loading State ── */
+.create-generate-btn.generating {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.create-generate-btn.generating::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ── Norman: Step-by-step Progress Clarity ── */
+.create-status-card {
+  animation: heroFadeUp 0.3s ease both;
+}
+
+/* ── Kare: Step Number Gradient (iconic, glanceable) ── */
+.home-step-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Splat Canvas Cinematic Load (Atkinson) ── */
+#scene-container canvas {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+#scene-container canvas.loaded {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ADDITIONAL EDITOR ENHANCEMENTS
+   NavigationHints, QuickActions, KeyboardShortcuts, ShotListSync
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Navigation Hints (Norman: Recognition over recall) ── */
+.navigation-hint {
+  position: fixed;
+  padding: 16px 24px;
+  background: rgba(17, 24, 39, 0.98);
+  border: 2px solid rgba(251, 191, 36, 0.4);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  max-width: 400px;
+}
+
+.navigation-hint.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.navigation-hint-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #f8fafc;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.navigation-hint-content strong {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.navigation-hint-content kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #fbbf24;
+}
+
+.navigation-hint-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.navigation-hint-close:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: #f8fafc;
+}
+
+/* ── Quick Actions (Systrom: Fast path to action) ── */
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(251, 191, 36, 0.95);
+  color: #000;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s;
+  pointer-events: auto;
+}
+
+.quick-action-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.quick-action-btn:hover {
+  background: #fcd34d;
+  transform: scale(1.02);
+}
+
+.quick-action-btn:active {
+  transform: scale(0.98);
+}
+
+.quick-action-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Shot List Enhancements ── */
+.shot-list-empty {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* ── Keyboard Shortcuts Display ── */
+.shortcuts-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+}
+
+.shortcut-item kbd {
+  padding: 2px 5px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+  color: #fbbf24;
+  font-size: 10px;
+}
+
+/* ── Loading States ── */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 8, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.loading-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loading-text {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Scene Empty State ── */
+.scene-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #475569;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.scene-empty-state h3 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.scene-empty-state p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
