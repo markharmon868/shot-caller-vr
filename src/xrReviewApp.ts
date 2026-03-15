@@ -6,7 +6,7 @@ import {
   VisibilityState,
   World,
 } from "@iwsdk/core";
-import { SceneBundle } from "./contracts/stageReview.js";
+import { SceneBundle, type ReviewPose } from "./contracts/stageReview.js";
 import { ReviewSceneLoader } from "./gaussianSplatLoader.js";
 import { createElementById } from "./editor/SceneState.js";
 import type { ProductionElement } from "./editor/elements/ProductionElement.js";
@@ -125,6 +125,26 @@ export class XrReviewApp {
 
   canEnterImmersive(): boolean {
     return Boolean(this.loader.getCollider());
+  }
+
+  getFocusedElementId(): string | null {
+    return null;
+  }
+
+  getFocusedElementLabel(): string | null {
+    return null;
+  }
+
+  getViewerPose(): ReviewPose {
+    const cam = this.world.camera;
+    return {
+      position: [cam.position.x, cam.position.y, cam.position.z],
+      rotation: [cam.rotation.x, cam.rotation.y, cam.rotation.z],
+    };
+  }
+
+  syncIssues(): void {
+    // no-op: XR mode reads issues dynamically
   }
 
   async enterOrExitXR(): Promise<void> {

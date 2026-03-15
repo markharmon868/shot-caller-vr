@@ -66,7 +66,7 @@ export class SceneState {
 
   constructor(private scene: THREE.Scene) {
     const url = new URL(window.location.href);
-    this.sceneId = url.searchParams.get("scene") ?? generateId();
+    this.sceneId = url.searchParams.get("scene") ?? "demo";
     this.updateUrl();
   }
 

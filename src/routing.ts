@@ -40,8 +40,6 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   if (headset && !sceneAvailable) {
     return "headset-empty";
   }
-  if (sceneAvailable) {
-    return "editor";
-  }
-  return "intake";
+  // Desktop: always land in editor (intake is only reachable via ?mode=intake)
+  return "editor";
 }

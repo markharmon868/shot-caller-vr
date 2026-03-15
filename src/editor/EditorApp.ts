@@ -225,7 +225,7 @@ class EditorApp {
     });
     document.getElementById("preview-vr-btn")!.addEventListener("click", () => {
       this.state.saveToKV();
-      window.location.href = "/?mode=stage4-xr";
+      window.location.href = `/?mode=stage4-xr&scene=${this.state.id}`;
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();
