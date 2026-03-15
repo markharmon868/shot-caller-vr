@@ -375,7 +375,8 @@ async function createServer() {
 
   // GET /api/pipeline/status/:jobId → PipelineJob
   app.get("/api/pipeline/status/:jobId", (req: Request, res: Response) => {
-    const job = getJob(req.params.jobId);
+    const jobId = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+    const job = getJob(jobId);
     if (!job) { res.status(404).json({ error: "Job not found" }); return; }
     res.json(job);
   });
