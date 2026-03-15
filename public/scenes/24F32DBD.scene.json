@@ -1,0 +1,22 @@
+{
+  "sceneId": "24F32DBD",
+  "version": 1,
+  "worldVersion": 1,
+  "revision": 1,
+  "status": "draft",
+  "elements": [],
+  "reviewIssues": [],
+  "approval": {
+    "status": "pending",
+    "reviewer": "",
+    "decidedAt": "",
+    "sceneRevision": 1,
+    "note": ""
+  },
+  "exportState": {
+    "status": "idle",
+    "lastCaptureDataUrl": "",
+    "requestedAt": "",
+    "lastPayload": ""
+  }
+}

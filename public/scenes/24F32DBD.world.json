@@ -1,0 +1,20 @@
+{
+  "sceneId": "24F32DBD",
+  "version": 1,
+  "unit": "meters",
+  "splatUrl": "/splats/scene-24f32dbd.spz",
+  "colliderUrl": "/splats/scene-24f32dbd-collider.glb",
+  "assetCatalogUrl": "/scenes/demo.assets.json",
+  "worldBounds": {
+    "min": [
+      -8,
+      0,
+      -8
+    ],
+    "max": [
+      8,
+      4,
+      8
+    ]
+  }
+}

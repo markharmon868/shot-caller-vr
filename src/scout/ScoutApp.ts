@@ -26,7 +26,13 @@ let svService: google.maps.StreetViewService;
 let activeJobId: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-// Coordinates are null until the user explicitly selects a location
+// Coordinates set by explicit user action (map click, search, marker drag).
+// These are the only coordinates ever sent to the pipeline.
+let confirmedLat: number | null = null;
+let confirmedLng: number | null = null;
+
+// Mirrors the current Street View panorama position (may differ from confirmed
+// due to Google snapping). Used only for display, never for submission.
 let pendingLat: number | null = null;
 let pendingLng: number | null = null;
 
@@ -118,18 +124,24 @@ function initMap(): void {
     setLocation(e.latLng.lat(), e.latLng.lng(), "marker_drag");
   });
 
-  // Street view navigation → sync coords back to map
+  // Street view navigation → sync marker position only.
+  // Do NOT update confirmedLat/confirmedLng here — Google may snap the panorama
+  // to a nearby pano (different coords) when coverage is sparse, which would
+  // silently overwrite the user's explicit map selection.
   panorama.addListener("position_changed", () => {
     const pos = panorama.getPosition();
     if (!pos) return;
     const lat = pos.lat();
     const lng = pos.lng();
-    // Only update if we already have a selection (navigating within SV)
+    // Only update display if we already have a selection (navigating within SV)
     if (pendingLat !== null) {
       pendingLat = lat;
       pendingLng = lng;
       marker.setPosition({ lat, lng });
-      updateCoords(lat, lng);
+      // Update display coords only — do NOT touch confirmedLat/confirmedLng
+      // and do NOT write to btn.dataset (those remain the user's explicit pick)
+      const el = document.getElementById("scout-coords");
+      if (el) el.textContent = `SV: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   });
 
@@ -138,6 +150,9 @@ function initMap(): void {
 
 function setLocation(lat: number, lng: number, source: string): void {
   console.log(`[Scout] Location set from ${source}: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+  // Lock in the confirmed coordinates — only explicit user actions reach here.
+  confirmedLat = lat;
+  confirmedLng = lng;
   pendingLat = lat;
   pendingLng = lng;
 
@@ -149,10 +164,6 @@ function setLocation(lat: number, lng: number, source: string): void {
 
   updateCoords(lat, lng);
   setGenerateEnabled(true);
-
-  // Store on button element as source of truth for submit
-  const btn = document.getElementById("scout-generate-btn");
-  if (btn) { btn.dataset.lat = String(lat); btn.dataset.lng = String(lng); }
 
   // Check Street View coverage — warn if no imagery at this spot
   clearCoverageWarning();
@@ -191,10 +202,10 @@ function clearCoverageWarning(): void {
 }
 
 function updateCoords(lat: number, lng: number): void {
+  // Shows the user's confirmed (explicitly selected) coordinates.
+  // This is called only from setLocation() — never from position_changed.
   const el = document.getElementById("scout-coords");
-  if (el) el.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  const btn = document.getElementById("scout-generate-btn");
-  if (btn) { btn.dataset.lat = String(lat); btn.dataset.lng = String(lng); }
+  if (el) el.textContent = `Selected: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
 function setGenerateEnabled(enabled: boolean): void {
@@ -222,17 +233,18 @@ function setStatus(msg: string, type: "idle" | "running" | "done" | "error" = "r
 export function onGenerateClick(): void {
   if (activeJobId) return;
 
-  // Read coordinates from button data attributes — the single source of truth
-  const btn = document.getElementById("scout-generate-btn") as HTMLButtonElement | null;
-  const lat = btn?.dataset.lat ? parseFloat(btn.dataset.lat) : pendingLat;
-  const lng = btn?.dataset.lng ? parseFloat(btn.dataset.lng) : pendingLng;
+  // confirmedLat/confirmedLng are the ONLY source of truth for submission.
+  // They are set exclusively by explicit user actions (map click, search,
+  // marker drag) and are never overwritten by panorama position_changed events.
+  const lat = confirmedLat;
+  const lng = confirmedLng;
 
   if (lat === null || lng === null) {
     showError("Click on the map to select a location first.");
     return;
   }
 
-  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng}`);
+  console.log(`[Scout] Submitting pipeline for lat=${lat}, lng=${lng} (confirmed)`);
 
   // Show confirmation coords in status
   setStatus(`Starting pipeline for ${lat.toFixed(5)}, ${lng.toFixed(5)}...`, "running");
