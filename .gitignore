@@ -155,5 +155,7 @@ pipeline/data/raw/*
 !pipeline/data/raw/.gitkeep
 pipeline/data/expanded/*
 !pipeline/data/expanded/.gitkeep
+pipeline/data/generated/*
+!pipeline/data/generated/.gitkeep
 pipeline/data/output/*
 !pipeline/data/output/.gitkeep

@@ -10,23 +10,41 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const generatedDir = path.resolve(__dirname, "../data/generated");
 const expandedDir = path.resolve(__dirname, "../data/expanded");
 const rawDir = path.resolve(__dirname, "../data/raw");
 const outputDir = path.resolve(__dirname, "../data/output");
 
+function listImages(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((f) => /\.(jpg|jpeg|png|webp)$/i.test(f));
+}
+
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const expanded = fs.existsSync(expandedDir)
-    ? fs.readdirSync(expandedDir).filter((f) => /\.(jpg|jpeg|png|webp)$/i.test(f))
-    : [];
-  const raw = fs.existsSync(rawDir)
-    ? fs.readdirSync(rawDir).filter((f) => /\.(jpg|jpeg|png|webp)$/i.test(f))
-    : [];
+  // Priority: generated (Nano Banana Pro) > expanded (Nano Banana 2) > raw (Street View)
+  const generated = listImages(generatedDir);
+  const expanded = listImages(expandedDir);
+  const raw = listImages(rawDir);
 
-  const sourceDir = expanded.length > 0 ? expandedDir : rawDir;
-  const files = expanded.length > 0 ? expanded : raw;
-  const label = expanded.length > 0 ? "expanded" : "raw";
+  let sourceDir: string;
+  let files: string[];
+  let label: string;
+
+  if (generated.length > 0) {
+    sourceDir = generatedDir;
+    files = generated;
+    label = "generated";
+  } else if (expanded.length > 0) {
+    sourceDir = expandedDir;
+    files = expanded;
+    label = "expanded";
+  } else {
+    sourceDir = rawDir;
+    files = raw;
+    label = "raw";
+  }
 
   if (files.length === 0) {
     console.log("No images to copy. Run pipeline:fetch first.");
