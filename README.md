@@ -2,62 +2,59 @@
 
 > Plan your shoot on a laptop. Walk it in VR. Let AI write the call sheet.
 
-Shot Caller is a WebXR production planning tool for filmmakers. Input a real shooting location, generate a 3D world model of that space, block your cameras and lights in a 3D editor, sequence your shots, validate everything in VR on a PICO headset, and export an AI-generated call sheet your AD can actually use.
+Shot Caller is a **WebXR production planning tool for filmmakers**. Pick any real-world location on Google Maps, generate a photorealistic 3D Gaussian splat of that space, block your cameras and lights in a spatial editor, sequence your shots, walk the set in VR on a PICO headset, and let Claude AI generate a production call sheet — all without stepping foot on location.
 
 Built at the [World Model Hackathon](https://luma.com/worldsinaction-sf26) — SensAI × PICO, March 2026.
 
+**[Live Demo](https://hackathon.cloudagi.org)** · **[DevPost](https://devpost.com/software/shot-caller)**
+
 ---
 
-<!-- SCREENSHOT: Hero screenshot or GIF of the 3D editor with a scene blocked out -->
-<!-- Suggested: Wide shot of the editor showing a camera with FOV cone, a light with coverage cone, and a cast mark on a Gaussian splat world -->
+![Shot Caller Landing Page](screenshots/01-landing-page.png)
 
 ---
 
 ## What it does
 
-Shot Caller has four modes accessible from a single URL:
+Shot Caller turns a filmmaker's spoken vision into a walkable 3D world so you can block shots and export a storyboard — without drawing any scenes or stepping on set.
+
+### Four modes, one URL:
 
 | Mode | Surface | What happens |
 |------|---------|--------------|
-| **Scouting** | Desktop | Input a Google Maps address or upload scout photos → Marble API generates a 3D Gaussian splat of the real location |
-| **Editing** | Desktop | Place cameras (with FOV cones), lights (with coverage cones), crew markers, and cast marks in the world. Sequence shots and group lighting setups. |
-| **VR Preview** | PICO headset | Same URL detects WebXR → immersive walkthrough of the fully blocked scene at real scale |
-| **Export** | Desktop | Claude AI agent reads the blocking plan → generates shooting order, equipment list, department breakdown → exports as PDF + shareable URL |
+| **Scout** | Desktop | Search any address on Google Maps → preview Street View → generate a 3D Gaussian splat via World Labs Marble API |
+| **Editor** | Desktop | Place cameras (with FOV cones), lights (with coverage cones), crew markers, cast marks, and equipment in the 3D world. Sequence shots and group lighting setups. |
+| **VR Preview** | PICO headset | Same URL auto-detects WebXR → immersive walkthrough of the fully blocked scene at real-world scale |
+| **Call Sheet** | Desktop | Claude AI reads your blocking plan → generates shooting order, equipment list, department call times → exports as PDF |
 
 ---
 
 ## Demo
 
-<!-- SCREENSHOT: GIF or video embed of the full demo flow -->
-<!-- Suggested flow: address input → loading screen → world loads → place camera → sequence → generate call sheet → hand to PICO -->
-
-**Demo video:** [Insert YouTube/Loom link here]
-
-**Live demo:** [Insert Vercel deployment URL here]
+**Live demo:** [https://hackathon.cloudagi.org](https://hackathon.cloudagi.org)
 
 ---
 
 ## Screenshots
 
-<!-- Add screenshots below as you have them. Suggested captions included. -->
+### Landing Page — How It Works
+![How It Works](screenshots/08-landing-workflow-section.png)
+*Three-step workflow: Scout the Location → Block the Scene → Walk the Set in VR*
 
-### Scouting Mode — Location input
-<!-- SCREENSHOT: The location input panel with a Maps address field and photo upload option -->
+### Features Overview
+![Features](screenshots/09-landing-features-section.png)
+*Gaussian Splat World Models, Camera Placement, Full Production Blocking, Shot Sequencer, PDF Export, WebXR Preview*
 
-### Editing Mode — 3D planning editor
-<!-- SCREENSHOT: Three.js orbit viewport with a camera (FOV cone), light (coverage cone), and cast mark placed in a Gaussian splat world -->
+### Scout Mode — Google Maps Location Picker
+![Scout Mode](screenshots/02-scout-google-maps.png)
+*Search any address, preview the location on Google Maps, and generate a Gaussian splat*
 
-### Shot Sequencing
-<!-- SCREENSHOT: Sequence mode active — cameras numbered 1, 2, 3 with shot type labels visible -->
+### Scout Mode — Location Selected
+![Location Selected](screenshots/11-scout-location-selected.png)
+*Selected coordinates with Street View preview, ready to generate a 3D world model*
 
-### AI Call Sheet Output
-<!-- SCREENSHOT: The call sheet panel showing shooting order grouped by setup, equipment list, and department breakdown -->
-
-### VR Preview — PICO walkthrough
-<!-- SCREENSHOT: PICO headset view showing the Gaussian splat world with camera placement and FOV cone visible at real scale -->
-
-### PDF Export
-<!-- SCREENSHOT: The exported PDF showing the top-down floor plan alongside the AI-generated call sheet -->
+### Full Landing Page
+![Full Landing](screenshots/10-landing-bottom-section.png)
 
 ---
 
@@ -65,13 +62,13 @@ Shot Caller has four modes accessible from a single URL:
 
 ```
 Frontend         Three.js r181 · IWSDK (ElixrJS) · SparkJS 2.0 · Vite · TypeScript
-World model      World Labs Marble API (Gaussian splat generation)
-Location data    Google Maps Static API · Google Street View Static API
-XR               WebXR Device API · PICO 4 browser
-AI agent         Claude API (claude-sonnet-4-6) via Anthropic SDK
-Scene state      Vercel KV (Redis)
-Export           PDFKit · Three.js orthographic renderer
-Deployment       Vercel (static + serverless functions)
+World model      World Labs Marble API (Gaussian splat generation from Street View imagery)
+Location data    Google Maps Static API · Google Street View Static API · Places Autocomplete
+XR               WebXR Device API · PICO 4 browser · IWER emulator for desktop testing
+AI agents        Claude API (claude-sonnet-4-6) via Anthropic SDK · Mastra Framework
+Scene state      Vercel KV (Redis) · localStorage fallback
+Export           jsPDF · Three.js orthographic renderer
+Backend          Express 5 · Node.js · TypeScript · Zod
 Base template    sensai-webxr-worldmodels (IWSDK + SparkJS + PICO emulator)
 ```
 
@@ -275,13 +272,13 @@ The agent reasons about shooting order efficiency (grouping by setup group to mi
 
 ## Team
 
-<!-- Add team members and their roles -->
-
 | Name | Role |
 |------|------|
-| [Your name] | [Your role — e.g. Web3D Editor + Shot Sequencing] |
-| [Teammate 2] | [e.g. Location Pipeline + World Generation] |
-| [Teammate 3] | [e.g. VR Mode + AI Agent + Export] |
+| Mark Harmon | Project Lead · Full-Stack · World Model Pipeline |
+| Arya Teja Rudraraju | AI Integration · Call Sheet Generation · DevOps |
+| Aditya Dev Singh | Frontend · 3D Editor · Scene Management |
+| Sean Tai | VR Integration · WebXR · PICO Testing |
+| V4C38 | Base Template · IWSDK · SparkJS Integration |
 
 ---
 
