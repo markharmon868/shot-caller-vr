@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { ProductionElement } from "./ProductionElement.js";
+import { SETUP_GROUP_COLORS } from "./CameraElement.js";
 
 /** Coverage cone material — updates colour when colour temp changes */
 function makeCoveMat(colorHex: number): THREE.MeshBasicMaterial {
@@ -102,10 +103,12 @@ export class LightElement extends ProductionElement {
   private coverageCone: THREE.Mesh;
   private coneEdges: THREE.LineSegments;
   private panelFace: THREE.Mesh;
+  private panelBody!: THREE.Mesh;
 
-  private _colorTemp = 5600; // Kelvin
-  private _coneAngle = 40; // degrees half-angle
-  private _coneDistance = 3; // metres
+  private _colorTemp = 5600;
+  private _coneAngle = 40;
+  private _coneDistance = 3;
+  private _setupGroup = "";
 
   constructor(id: string, name: string) {
     super(id, "light", name);
@@ -113,10 +116,10 @@ export class LightElement extends ProductionElement {
     const colorHex = kelvinToHex(this._colorTemp);
 
     this.panelGroup = buildLightPanel(colorHex);
-    this.panelGroup.position.y = 1.4; // stand puts it up high
+    this.panelGroup.position.y = 1.4;
     this.group.add(this.panelGroup);
 
-    // The face mesh is the 3rd child (index 2) of panelGroup
+    this.panelBody = this.panelGroup.children[0] as THREE.Mesh;
     this.panelFace = this.panelGroup.children[2] as THREE.Mesh;
 
     // Coverage cone geometry: ConeGeometry tip-down, tip at panel position
@@ -175,6 +178,7 @@ export class LightElement extends ProductionElement {
       colorTemp: this._colorTemp,
       coneAngle: this._coneAngle,
       coneDistance: this._coneDistance,
+      setupGroup: this._setupGroup,
     };
   }
 
@@ -192,16 +196,29 @@ export class LightElement extends ProductionElement {
         this._coneDistance = Number(value);
         this.rebuildCone();
         break;
+      case "setupGroup":
+        this._setupGroup = String(value);
+        (this.panelBody.material as THREE.MeshStandardMaterial).color.setHex(
+          SETUP_GROUP_COLORS[this._setupGroup] ?? 0x1a1a1a
+        );
+        break;
     }
   }
 
   static buildPropertiesHTML(el: LightElement): string {
-    const ct = (el as unknown as { _colorTemp: number })._colorTemp;
-    const ca = (el as unknown as { _coneAngle: number })._coneAngle;
+    const ct = el._colorTemp;
+    const ca = el._coneAngle;
+    const groups = ["", "A", "B", "C", "D"].map(
+      (g) => `<option value="${g}" ${el._setupGroup === g ? "selected" : ""}>${g || "— None —"}</option>`
+    ).join("");
     return `
       <div class="prop-row">
         <label class="prop-label">Name</label>
         <input class="prop-input" type="text" data-prop="name" value="${el.name}" />
+      </div>
+      <div class="prop-row">
+        <label class="prop-label">Setup Group</label>
+        <select class="prop-input" data-prop="setupGroup">${groups}</select>
       </div>
       <div class="prop-row">
         <label class="prop-label">

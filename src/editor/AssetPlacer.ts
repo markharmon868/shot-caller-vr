@@ -158,6 +158,7 @@ export class AssetPlacer {
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
     if (e.key === "Escape") {
       this.cancelTool();
       return;

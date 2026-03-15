@@ -162,6 +162,7 @@
       .btn-primary:hover { background: #3a2a00; }
       .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
       .btn-danger:hover { background: #2a0a0a; }
+      .btn.active { background: #1a0a33; border-color: #a78bfa; color: #a78bfa; }
 
       /* Properties panel */
       #properties-section { display: none; }
@@ -303,6 +304,20 @@
             <button class="tool-btn" data-tool="equipment">
               <span class="icon">🎬</span> Equipment
             </button>
+            <button class="tool-btn" data-tool="props">
+              <span class="icon">📦</span> Prop
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Shot Sequence</div>
+          <button id="sequence-mode-btn" class="btn" style="border-color:#a78bfa;color:#a78bfa;margin-bottom:5px">
+            ◉ Sequence Mode
+          </button>
+          <button id="sequence-reset-btn" class="btn">Clear Sequence</button>
+          <div id="sequence-hint" style="display:none;margin-top:6px;padding:6px 8px;background:#1a0d33;border-radius:4px;border-left:2px solid #a78bfa;color:#a78bfa;font-size:9px;line-height:1.6">
+            Click cameras in shooting order.<br>Each click assigns the next shot #.<br>Click again to re-assign.
           </div>
         </div>
 

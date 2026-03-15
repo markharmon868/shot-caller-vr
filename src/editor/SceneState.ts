@@ -5,6 +5,7 @@ import { LightElement } from "./elements/LightElement.js";
 import { CastMarkElement } from "./elements/CastMarkElement.js";
 import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
+import { PropsElement } from "./elements/PropsElement.js";
 
 export interface SceneData {
   id: string;
@@ -30,6 +31,7 @@ function nextName(type: string): string {
     cast_mark: "Actor",
     crew: "Crew",
     equipment: "Equipment",
+    props: "Prop",
     set_dressing: "Set Piece",
   };
   return `${labels[type] ?? type} ${typeCounts[type]}`;
@@ -42,6 +44,7 @@ export function createElementById(id: string, type: string, name: string): Produ
     case "cast_mark": return new CastMarkElement(id, name);
     case "crew":      return new CrewElement(id, name);
     case "equipment": return new EquipmentElement(id, name);
+    case "props":     return new PropsElement(id, name);
     default:          return new CameraElement(id, name);
   }
 }

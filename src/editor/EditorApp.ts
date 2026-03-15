@@ -10,6 +10,7 @@ import { LightElement } from "./elements/LightElement.js";
 import { CastMarkElement } from "./elements/CastMarkElement.js";
 import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
+import { PropsElement } from "./elements/PropsElement.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -18,6 +19,8 @@ class EditorApp {
   private controls!: OrbitControls;
   private transformControls!: TransformControls;
   private gizmoMode: "translate" | "rotate" | "scale" = "translate";
+  private sequenceMode = false;
+  private nextShotNumber = 1;
   private spark!: SparkRenderer;
   private splat: SplatMesh | null = null;
   private floor!: THREE.Mesh;
@@ -233,6 +236,14 @@ class EditorApp {
       });
     });
 
+    // Sequence mode
+    document.getElementById("sequence-mode-btn")!.addEventListener("click", () => {
+      this.toggleSequenceMode();
+    });
+    document.getElementById("sequence-reset-btn")!.addEventListener("click", () => {
+      this.resetSequence();
+    });
+
     // Keyboard shortcuts
     window.addEventListener("keydown", (e) => {
       if (e.target instanceof HTMLInputElement) return; // don't steal input focus
@@ -253,6 +264,30 @@ class EditorApp {
 
   // ── Properties panel ───────────────────────────────────────────────────────
 
+  private toggleSequenceMode(): void {
+    this.sequenceMode = !this.sequenceMode;
+    const btn = document.getElementById("sequence-mode-btn")!;
+    const hint = document.getElementById("sequence-hint")!;
+    if (this.sequenceMode) {
+      btn.classList.add("active");
+      hint.style.display = "block";
+      this.placer.cancelTool();
+      this.setStatus("Sequence Mode — click cameras in order to assign shot numbers");
+    } else {
+      btn.classList.remove("active");
+      hint.style.display = "none";
+      this.setStatus("Ready");
+    }
+  }
+
+  private resetSequence(): void {
+    this.nextShotNumber = 1;
+    for (const el of this.state.elements.values()) {
+      if (el instanceof CameraElement) el.setShotNumber(null);
+    }
+    this.setStatus("Shot sequence cleared");
+  }
+
   private setGizmoMode(mode: "translate" | "rotate" | "scale"): void {
     this.gizmoMode = mode;
     this.transformControls.setMode(mode);
@@ -265,6 +300,12 @@ class EditorApp {
       this.propertiesSection.classList.remove("visible");
       this.transformControls.detach();
       return;
+    }
+
+    // Sequence mode: clicking a camera assigns the next shot number
+    if (this.sequenceMode && el instanceof CameraElement) {
+      el.setShotNumber(this.nextShotNumber++);
+      this.setStatus(`Shot ${el.shotNumber} assigned to ${el.name}`);
     }
 
     this.transformControls.attach(el.group);
@@ -315,6 +356,7 @@ class EditorApp {
     if (el instanceof CastMarkElement) return CastMarkElement.buildPropertiesHTML(el);
     if (el instanceof CrewElement) return CrewElement.buildPropertiesHTML(el);
     if (el instanceof EquipmentElement) return EquipmentElement.buildPropertiesHTML(el);
+    if (el instanceof PropsElement) return PropsElement.buildPropertiesHTML(el);
     return `<p style="color:#6b5a8a;font-size:10px">No properties</p>`;
   }
 
