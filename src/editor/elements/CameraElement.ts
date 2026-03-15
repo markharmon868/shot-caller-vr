@@ -159,6 +159,8 @@ export class CameraElement extends ProductionElement {
   get shotType(): ShotType { return this._shotType; }
   get shotLabel(): string { return this._shotLabel; }
   get setupGroup(): string { return this._setupGroup; }
+  get vFovDeg(): number { return this._vFov; }
+  get aspectRatio(): number { return this._aspectRatio; }
 
   setShotNumber(n: number | null): void {
     this._shotNumber = n;
@@ -184,6 +186,23 @@ export class CameraElement extends ProductionElement {
     const body = this.bodyGroup.children[0] as THREE.Mesh;
     (body.material as THREE.MeshStandardMaterial).color.setHex(color === BODY_COLOR ? BODY_COLOR : color);
     if (this._shotNumber !== null) this.refreshBadge();
+  }
+
+  /** Highlight this camera as the active shot in review mode */
+  setReviewActive(active: boolean): void {
+    this.bodyGroup.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        const mat = mesh.material as THREE.MeshStandardMaterial;
+        if (mat.emissive) mat.emissive.setHex(active ? 0x4a3800 : 0x000000);
+        mat.transparent = false;
+        mat.opacity = 1.0;
+      }
+    });
+    (this.fovLines.material as THREE.LineBasicMaterial).color.setHex(
+      active ? 0xfde68a : FOV_COLOR
+    );
+    (this.fovLines.material as THREE.LineBasicMaterial).opacity = active ? 1.0 : 0.85;
   }
 
   private rebuildFov(): void {

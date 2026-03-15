@@ -27,6 +27,8 @@ export class AssetPlacer {
 
   /** Set to true while TransformControls is dragging so AssetPlacer doesn't also move the element */
   gizmoActive = false;
+  /** Set to true whenever an element is selected — disables floor-drag repositioning */
+  hasSelection = false;
 
   // Callbacks for the EditorApp to respond to selection changes
   onSelect?: (el: ProductionElement | null) => void;
@@ -116,7 +118,8 @@ export class AssetPlacer {
   private onMouseDown = (e: MouseEvent): void => {
     if (e.button !== 0) return;
     if (this.activeTool !== "select") return;
-    if (this.gizmoActive) return;
+    // When an element is selected the TransformControls gizmo handles all movement
+    if (this.gizmoActive || this.hasSelection) return;
 
     this.updatePointer(e);
     const hit = this.raycastElements();

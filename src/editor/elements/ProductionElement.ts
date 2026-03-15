@@ -51,6 +51,18 @@ export abstract class ProductionElement {
     this.onSelectChanged(selected);
   }
 
+  /** Dim or restore the element for shot review mode */
+  setDimmed(dimmed: boolean): void {
+    this.group.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        const mat = mesh.material as THREE.Material;
+        mat.transparent = dimmed;
+        mat.opacity = dimmed ? 0.15 : 1.0;
+      }
+    });
+  }
+
   protected abstract onSelectChanged(selected: boolean): void;
 
   abstract getProperties(): Record<string, unknown>;
