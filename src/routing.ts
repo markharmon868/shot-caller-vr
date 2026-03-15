@@ -10,7 +10,16 @@ export type AppMode =
   | "headset-empty";
 
 export function isHeadsetBrowser(userAgent: string): boolean {
-  return /PicoXR|OculusBrowser|SamsungBrowser\/.*VR|Mobile VR|Quest/i.test(userAgent);
+  const headsetPattern = /OculusBrowser|PicoXR|SamsungBrowser\/.*VR|Mobile VR/i;
+  if (!headsetPattern.test(userAgent)) return false;
+
+  // IWER dev emulator injects Quest-like UA on desktop browsers.
+  // Real headset browsers don't include standard desktop engine tokens.
+  const isDesktopWithEmulator =
+    /Windows NT|Macintosh|X11.*Linux/i.test(userAgent) && !/Mobile/i.test(userAgent);
+  if (isDesktopWithEmulator) return false;
+
+  return true;
 }
 
 export function hasSceneId(url: URL): boolean {
