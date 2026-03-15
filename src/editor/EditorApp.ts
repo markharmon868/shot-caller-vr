@@ -520,6 +520,10 @@ class EditorApp {
   }
 
   async loadSplat(url: string): Promise<void> {
+    // Normalize bare filenames to the splats directory
+    if (!url.includes("/") && (url.endsWith(".spz") || url.endsWith(".ply"))) {
+      url = `./splats/${url}`;
+    }
     this.showLoading(`Loading scene…`);
     this.state.setSplatUrl(url);
 
