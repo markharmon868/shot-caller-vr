@@ -32,8 +32,12 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   // Auto-detect real headset (but not localhost — IWER emulator spoofs the UA there)
   const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
   if (headset && !isLocalhost) {
-    if (sceneAvailable) return "vr";
-    return "headset-empty";
+    if (!sceneAvailable) {
+      // Default to a known scene so headset users don't need to type query params
+      url.searchParams.set("scene", "697DF004");
+      window.history.replaceState(null, "", url.toString());
+    }
+    return "vr";
   }
 
   // Desktop default: marketing landing page
