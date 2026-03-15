@@ -16,7 +16,7 @@ const editorStyles = `
   }
 
   #editor-sidebar {
-    display: none;
+    display: flex;
     flex-direction: column;
     width: 220px;
     min-width: 220px;
@@ -25,7 +25,6 @@ const editorStyles = `
     overflow-y: auto;
     z-index: 10;
   }
-  #editor-sidebar.visible { display: flex; }
 
   .sidebar-header {
     padding: 16px 14px 12px;
@@ -297,19 +296,47 @@ const editorStyles = `
     background: rgba(4,1,14,0.85);
   }
 
-  /* 3D Models section */
-  .gltf-select {
-    width: 100%; background: #1a0d33; border: 1px solid #2d1a4a;
-    border-radius: 4px; color: #e2e8f0; padding: 5px 8px;
-    font-size: 10px; margin-bottom: 5px; outline: none;
+  /* Asset catalog accordion */
+  .cat-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 4px; cursor: pointer; border-radius: 4px;
+    color: #a090bc; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.3px; user-select: none;
+    transition: all 0.12s;
   }
-  .gltf-select:focus { border-color: #f97316; }
+  .cat-header:hover { color: #d0c0e8; background: rgba(255,255,255,0.03); }
+  .cat-chevron { font-size: 8px; color: #3d2a5a; transition: transform 0.15s; margin-left: auto; }
+  .cat-header.open .cat-chevron { transform: rotate(90deg); color: #6b5a8a; }
+  .cat-header.open { color: #d0c0e8; }
+
+  .cat-items { display: none; padding-bottom: 4px; }
+  .cat-items.open { display: block; }
+
+  .cat-item {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; padding: 6px 8px; border-radius: 5px; cursor: pointer;
+    margin-bottom: 2px; border: 1px solid transparent;
+    transition: all 0.12s;
+  }
+  .cat-item:hover { background: #1a0d33; border-color: #2d1a4a; }
+  .cat-item.active {
+    background: #1a0a00; border-color: #f59e0b;
+  }
+  .cat-item-name {
+    font-size: 9px; color: #c4b5d8; line-height: 1.3;
+    flex: 1; min-width: 0;
+  }
+  .cat-item.active .cat-item-name { color: #fbbf24; }
+  .cat-item-rate {
+    font-size: 8px; color: #34d399; font-variant-numeric: tabular-nums;
+    white-space: nowrap; flex-shrink: 0; font-weight: 600;
+  }
 
   #gltf-drop-zone {
-    border: 1px dashed #2d1a4a; border-radius: 6px; padding: 14px 10px;
+    border: 1px dashed #2d1a4a; border-radius: 6px; padding: 10px;
     text-align: center; color: #3d2a5a; font-size: 9px;
     line-height: 1.6; cursor: pointer; transition: all 0.15s;
-    margin-top: 5px;
+    margin-top: 6px;
   }
   #gltf-drop-zone:hover, #gltf-drop-zone.drag-over {
     border-color: #f97316; color: #fb923c; background: rgba(249,115,22,0.06);
@@ -350,7 +377,9 @@ export function renderEditorShell(): void {
       <div id="editor-sidebar">
         <div class="sidebar-header">
           <h1>Shot Caller</h1>
-          <p>Production Blocking Tool</p>
+          <div id="scene-title" contenteditable="true" spellcheck="false"
+               style="font-size:10px;color:#6b7280;padding:2px 4px;border-radius:3px;outline:none;cursor:text;"
+               title="Click to rename scene">Untitled Scene</div>
         </div>
 
         <!-- Gaussian Scene -->
@@ -377,42 +406,31 @@ export function renderEditorShell(): void {
           </div>
         </div>
 
-        <!-- Elements -->
-        <div class="sidebar-section">
-          <div class="section-title">Elements</div>
-          <div class="tool-grid">
-            <button class="tool-btn wide active" data-tool="select">
-              <span class="icon">↖</span> Select
-            </button>
-            <button class="tool-btn" data-tool="camera">
-              <span class="icon">🎥</span> Camera
-            </button>
-            <button class="tool-btn" data-tool="light">
-              <span class="icon">💡</span> Light
-            </button>
+        <!-- Select Tool -->
+        <div class="sidebar-section" style="padding-bottom:8px">
+          <button class="tool-btn wide active" data-tool="select" id="select-tool-btn">
+            <span class="icon">↖</span> Select / Move
+          </button>
+          <!-- Cast / Crew quick-place -->
+          <div class="tool-grid" style="margin-top:6px">
             <button class="tool-btn" data-tool="cast_mark">
-              <span class="icon">✕</span> Actor
+              <span class="icon">✕</span> Actor Mark
             </button>
             <button class="tool-btn" data-tool="crew">
               <span class="icon">🚶</span> Crew
             </button>
-            <button class="tool-btn" data-tool="equipment">
-              <span class="icon">🎬</span> Equipment
-            </button>
-            <button class="tool-btn" data-tool="props">
-              <span class="icon">📦</span> Props
-            </button>
           </div>
         </div>
 
-        <!-- 3D Models -->
+        <!-- Asset Library accordion (built dynamically) -->
         <div class="sidebar-section">
-          <div class="section-title">3D Models</div>
-          <select id="gltf-model-select" class="gltf-select">
-            <option value="">— no models in library —</option>
-          </select>
-          <button id="gltf-add-btn" class="btn" disabled>Add to Scene</button>
-          <div id="gltf-drop-zone">
+          <div class="section-title">Asset Library</div>
+          <div id="asset-catalog-accordion">
+            <div style="color:#3d2a5a;font-size:9px;text-align:center;padding:10px 0">
+              Loading catalog…
+            </div>
+          </div>
+          <div id="gltf-drop-zone" style="margin-top:8px">
             Drop .glb / .gltf here<br>
             <span style="opacity:0.6">or drag onto the viewport</span>
           </div>
@@ -453,6 +471,7 @@ export function renderEditorShell(): void {
             </div>
             <div id="shot-review-type" style="color:#94a3b8;font-size:9px"></div>
             <div id="shot-review-label" style="color:#e2e8f0;font-size:10px;font-style:italic"></div>
+            <div id="shot-review-position" style="color:#374151;font-size:10px;margin-top:2px"></div>
             <div class="review-nav">
               <button id="shot-prev-btn">◀</button>
               <button id="shot-next-btn">▶</button>
@@ -473,10 +492,15 @@ export function renderEditorShell(): void {
           <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
           <button id="preview-vr-btn" class="btn btn-vr">Preview in VR</button>
           <button id="export-json-btn" class="btn">Export JSON</button>
-          <button id="clear-elements-btn" class="btn btn-danger" style="margin-top:4px">Clear All Elements</button>
+          <button id="export-pdf-btn" class="btn">Export Shot List PDF</button>
+          <button id="clear-scene-btn" class="btn btn-danger" style="margin-top:4px">Clear Scene</button>
+          <button id="clear-elements-btn" class="btn btn-danger" style="margin-top:2px;display:none">Clear Elements</button>
         </div>
 
-        <div id="status-bar">Ready</div>
+        <div id="status-bar">
+          <span id="status-msg">Ready</span>
+          <span id="element-count" style="color:#6b7280;font-size:10px"></span>
+        </div>
       </div>
 
       <div id="scene-container">
@@ -549,6 +573,382 @@ export function renderVrShell(): void {
       <a id="vr-back-link" href="/">← Editor</a>
       <div id="vr-error"></div>
     </div>
+  `;
+}
+
+export function renderLandingShell(): void {
+  removeEditorStyle();
+  document.body.className = "";
+  document.title = "Shot Caller — AI Production Blocking for Filmmakers";
+  document.body.style.cssText = "margin:0;padding:0;overflow-x:hidden;";
+  document.body.innerHTML = `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg: #07080c;
+        --surface: #0d0f14;
+        --raised: #131620;
+        --border: #1a1d28;
+        --accent: #f59e0b;
+        --accent2: #ef4444;
+        --text: #e5e7eb;
+        --muted: #6b7280;
+        --dim: #374151;
+        --mono: 'IBM Plex Mono', monospace;
+        --sans: 'IBM Plex Sans', system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+      }
+
+      /* ── Nav ── */
+      nav {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 48px;
+        background: rgba(7,8,12,0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-logo {
+        font-family: var(--mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 3px; text-transform: uppercase;
+        color: var(--accent); text-decoration: none;
+      }
+      .nav-links { display: flex; align-items: center; gap: 32px; }
+      .nav-links a {
+        font-size: 12px; font-family: var(--mono); letter-spacing: 1px;
+        color: var(--muted); text-decoration: none;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover { color: var(--text); }
+      .nav-cta {
+        padding: 8px 20px; border-radius: 6px;
+        background: var(--accent); color: #0a0500 !important;
+        font-weight: 700 !important; font-size: 11px !important;
+        letter-spacing: 1px !important; transition: opacity 0.15s !important;
+      }
+      .nav-cta:hover { opacity: 0.85 !important; color: #0a0500 !important; }
+
+      /* ── Hero ── */
+      .hero {
+        min-height: 100vh;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center;
+        padding: 120px 24px 80px;
+        position: relative; overflow: hidden;
+      }
+      .hero::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(245,158,11,0.07) 0%, transparent 70%),
+                    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(239,68,68,0.05) 0%, transparent 60%);
+        pointer-events: none;
+      }
+      .hero-kicker {
+        font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
+        text-transform: uppercase; color: var(--accent);
+        margin-bottom: 20px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .hero-kicker::before, .hero-kicker::after {
+        content: ''; flex: 1 1 40px; max-width: 40px;
+        height: 1px; background: var(--accent); opacity: 0.4;
+      }
+      .hero h1 {
+        font-family: var(--mono); font-size: clamp(36px, 6vw, 72px);
+        font-weight: 700; line-height: 1.1;
+        letter-spacing: -1px;
+        margin-bottom: 24px;
+      }
+      .hero h1 span { color: var(--accent); }
+      .hero-sub {
+        font-size: clamp(16px, 2vw, 20px); font-weight: 300;
+        color: var(--muted); max-width: 560px;
+        margin: 0 auto 48px;
+        line-height: 1.7;
+      }
+      .hero-sub strong { color: var(--text); font-weight: 500; }
+      .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+      .btn-primary-lg {
+        padding: 16px 40px; border-radius: 8px; border: none;
+        background: linear-gradient(135deg, var(--accent), #f97316);
+        color: #0a0500; font-size: 14px; font-weight: 700;
+        font-family: var(--mono); letter-spacing: 1px;
+        cursor: pointer; text-decoration: none; display: inline-block;
+        transition: transform 0.15s, box-shadow 0.15s;
+        box-shadow: 0 0 32px rgba(245,158,11,0.25);
+      }
+      .btn-primary-lg:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 40px rgba(245,158,11,0.35);
+      }
+      .btn-ghost-lg {
+        padding: 15px 32px; border-radius: 8px;
+        border: 1px solid var(--border); background: transparent;
+        color: var(--muted); font-size: 13px; font-family: var(--mono);
+        letter-spacing: 1px; cursor: pointer; text-decoration: none;
+        display: inline-block; transition: border-color 0.15s, color 0.15s;
+      }
+      .btn-ghost-lg:hover { border-color: var(--dim); color: var(--text); }
+
+      /* ── Workflow steps ── */
+      .section {
+        padding: 100px 48px;
+        max-width: 1200px; margin: 0 auto;
+      }
+      .section-label {
+        font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
+        text-transform: uppercase; color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-family: var(--mono); font-size: clamp(24px, 3vw, 36px);
+        font-weight: 700; margin-bottom: 48px;
+        line-height: 1.2;
+      }
+      .steps {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2px;
+      }
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 40px 32px;
+        position: relative;
+        transition: border-color 0.2s;
+      }
+      .step:first-child { border-radius: 12px 0 0 12px; }
+      .step:last-child { border-radius: 0 12px 12px 0; }
+      .step:hover { border-color: var(--dim); }
+      .step-num {
+        font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+        color: var(--muted); margin-bottom: 20px;
+        text-transform: uppercase;
+      }
+      .step-icon {
+        font-size: 36px; margin-bottom: 16px; display: block;
+        line-height: 1;
+      }
+      .step h3 {
+        font-family: var(--mono); font-size: 16px; font-weight: 700;
+        margin-bottom: 12px; color: var(--text);
+      }
+      .step p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+      .step-tag {
+        margin-top: 20px; display: inline-block;
+        font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+        padding: 4px 10px; border-radius: 4px;
+        background: rgba(245,158,11,0.1); color: var(--accent);
+        border: 1px solid rgba(245,158,11,0.2);
+      }
+
+      /* ── Divider ── */
+      .divider {
+        height: 1px; background: var(--border);
+        margin: 0 48px;
+      }
+
+      /* ── Features grid ── */
+      .features {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1px; border: 1px solid var(--border);
+        border-radius: 12px; overflow: hidden;
+      }
+      .feature {
+        background: var(--surface);
+        padding: 36px 32px;
+        transition: background 0.2s;
+      }
+      .feature:hover { background: var(--raised); }
+      .feature-icon {
+        font-size: 28px; margin-bottom: 16px; display: block;
+      }
+      .feature h3 {
+        font-family: var(--mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 0.5px; margin-bottom: 10px; color: var(--text);
+      }
+      .feature p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+      .feature-badge {
+        display: inline-block; margin-top: 16px;
+        font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+        padding: 3px 8px; border-radius: 3px; text-transform: uppercase;
+        background: rgba(239,68,68,0.1); color: #f87171;
+        border: 1px solid rgba(239,68,68,0.2);
+      }
+
+      /* ── CTA section ── */
+      .cta-section {
+        text-align: center;
+        padding: 100px 48px 120px;
+        position: relative;
+      }
+      .cta-section::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(245,158,11,0.05) 0%, transparent 70%);
+        pointer-events: none;
+      }
+      .cta-section h2 {
+        font-family: var(--mono); font-size: clamp(28px, 4vw, 48px);
+        font-weight: 700; margin-bottom: 16px; line-height: 1.2;
+      }
+      .cta-section p {
+        font-size: 16px; color: var(--muted); margin-bottom: 48px;
+        max-width: 480px; margin-left: auto; margin-right: auto;
+      }
+
+      /* ── Footer ── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 32px 48px;
+        display: flex; justify-content: space-between; align-items: center;
+        flex-wrap: wrap; gap: 12px;
+      }
+      footer p { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+      footer a { color: var(--muted); text-decoration: none; font-family: var(--mono); font-size: 11px; }
+      footer a:hover { color: var(--text); }
+      .footer-links { display: flex; gap: 24px; }
+
+      @media (max-width: 768px) {
+        nav { padding: 14px 20px; }
+        .nav-links { gap: 16px; }
+        .section { padding: 60px 20px; }
+        .step:first-child, .step:last-child { border-radius: 0; }
+        .steps { gap: 1px; }
+        footer { padding: 24px 20px; }
+      }
+    </style>
+
+    <!-- Nav -->
+    <nav>
+      <a class="nav-logo" href="/">Shot Caller</a>
+      <div class="nav-links">
+        <a href="#workflow">Workflow</a>
+        <a href="#features">Features</a>
+        <a href="/?mode=scout" class="nav-cta">Start Scouting →</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-kicker">AI-Powered Production Tool</div>
+      <h1>Block your shots<br>before you <span>set foot</span> on set.</h1>
+      <p class="hero-sub">
+        Pick any location on Google Maps, generate a <strong>photorealistic 3D scene</strong>
+        from Street View, then place your cameras, cast, and crew — all before production day.
+      </p>
+      <div class="hero-actions">
+        <a href="/?mode=scout" class="btn-primary-lg">Start Scouting →</a>
+        <a href="/?mode=editor" class="btn-ghost-lg">Open Editor</a>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Workflow -->
+    <section id="workflow" style="padding:100px 0;">
+      <div class="section">
+        <div class="section-label">How it works</div>
+        <div class="section-title">From location to locked shot list<br>in three steps.</div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">Step 01</div>
+            <span class="step-icon">🗺</span>
+            <h3>Scout the Location</h3>
+            <p>Drop a pin anywhere on Google Maps. Shot Caller captures 24 Street View angles and submits them to Marble Labs to generate a photorealistic Gaussian splat — the real location as a 3D world model.</p>
+            <span class="step-tag">Google Maps · Street View · Marble Labs</span>
+          </div>
+          <div class="step">
+            <div class="step-num">Step 02</div>
+            <span class="step-icon">🎬</span>
+            <h3>Block the Scene</h3>
+            <p>Place cameras, cast marks, crew, and equipment inside the splat. Sequence shots in shooting order, review them with orbital camera moves, and export a shot list PDF — all in the browser.</p>
+            <span class="step-tag">3D Editor · Shot Sequencer · PDF Export</span>
+          </div>
+          <div class="step">
+            <div class="step-num">Step 03</div>
+            <span class="step-icon">🥽</span>
+            <h3>Walk the Set in VR</h3>
+            <p>Hit "Preview in VR" and walk the blocked scene on a PICO headset or desktop emulator. See your shot positions at real scale before a single light stand hits the ground.</p>
+            <span class="step-tag">WebXR · PICO · Desktop Emulator</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Features -->
+    <section id="features" style="padding:100px 0;">
+      <div class="section">
+        <div class="section-label">Features</div>
+        <div class="section-title">Built for directors,<br>DPs, and ADs.</div>
+        <div class="features">
+          <div class="feature">
+            <span class="feature-icon">🌐</span>
+            <h3>Gaussian Splat World Models</h3>
+            <p>Every generated scene is a true photorealistic 3D splat — not a 3D model or a 360° photo. Walk through it, orbit it, or view it in VR at full scale.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📷</span>
+            <h3>Camera Placement & Shot Types</h3>
+            <p>Place cameras with shot type labels (WS, MS, CU, OTS, POV) and setup groups. Each camera is visible in the editor and in the VR walkthrough.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🎭</span>
+            <h3>Full Production Blocking</h3>
+            <p>Place cast marks, crew positions, equipment, and props. Assign names, roles, and setup groups with color-coded visual indicators.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🔢</span>
+            <h3>Shot Sequencer</h3>
+            <p>Click cameras in shooting order to assign shot numbers. Step through the sequence with animated orbital camera moves to review your entire shoot plan.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📄</span>
+            <h3>Shot List PDF Export</h3>
+            <p>Generate a production-ready shot list PDF with one click — shot numbers, types, labels, and setup groups formatted for your AD to hand off to the crew.</p>
+            <span class="feature-badge">New</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🥽</span>
+            <h3>WebXR Preview</h3>
+            <p>Walk the blocked scene in VR with a PICO headset before production day. No app install needed — runs directly in the browser over a local network.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2>Ready to block your first scene?</h2>
+      <p>Pick a location, generate the splat, and start placing cameras in minutes.</p>
+      <div class="hero-actions">
+        <a href="/?mode=scout" class="btn-primary-lg">Start Scouting →</a>
+        <a href="/?mode=editor" class="btn-ghost-lg">Jump to Editor</a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>© 2026 Shot Caller · Production Blocking for Filmmakers</p>
+      <div class="footer-links">
+        <a href="/?mode=scout">Scout</a>
+        <a href="/?mode=editor">Editor</a>
+        <a href="/?mode=vr">VR Preview</a>
+      </div>
+    </footer>
   `;
 }
 

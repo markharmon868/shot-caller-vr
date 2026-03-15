@@ -1,4 +1,5 @@
 export type AppMode =
+  | "landing"
   | "scout"
   | "intake"
   | "editor"
@@ -18,6 +19,7 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   const headset = isHeadsetBrowser(userAgent);
   const sceneAvailable = hasSceneId(url);
 
+  if (explicitMode === "landing") return "landing";
   if (explicitMode === "scout") return "scout";
   if (explicitMode === "intake") return "intake";
   if (explicitMode === "editor") return "editor";
@@ -27,11 +29,15 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
     return "vr";
   }
 
-  if (headset && sceneAvailable) return "vr";
-  if (headset && !sceneAvailable) return "headset-empty";
+  // Auto-detect real headset (but not localhost — IWER emulator spoofs the UA there)
+  const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (headset && !isLocalhost) {
+    if (sceneAvailable) return "vr";
+    return "headset-empty";
+  }
 
-  // Desktop default: scout landing page
-  // Go directly to editor if a splat or scene param is present
+  // Desktop default: marketing landing page
+  // Skip straight to editor/scout if splat or scene param is present
   if (url.searchParams.get("splat") || sceneAvailable) return "editor";
-  return "scout";
+  return "landing";
 }

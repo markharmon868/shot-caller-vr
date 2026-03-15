@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
-import { AssetPlacer, type ToolType } from "./AssetPlacer.js";
+import { AssetPlacer } from "./AssetPlacer.js";
+import type { ToolType } from "./AssetPlacer.js";
 import { SceneState } from "./SceneState.js";
 import type { ProductionElement } from "./elements/ProductionElement.js";
 import { CameraElement } from "./elements/CameraElement.js";
@@ -14,6 +15,7 @@ import { PropsElement } from "./elements/PropsElement.js";
 import { GltfElement } from "./elements/GltfElement.js";
 import { toast } from "./toast.js";
 import { exportShotListPDF } from "./exportPDF.js";
+import { loadAssetCatalog, getCatalogItemById } from "./assetCatalog.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -99,7 +101,7 @@ class EditorApp {
     }
     this.updateElementCount();
 
-    this.initGltfLibrary();
+    void this.initAssetCatalog();
     this.initDragDrop();
     this.wireSceneTitle();
     this.startDemoModeIfRequested();
@@ -233,7 +235,23 @@ class EditorApp {
     this.placer.attach(this.renderer.domElement);
 
     this.placer.onSelect = (el) => this.onElementSelected(el);
-    this.placer.onPlace = () => {
+    this.placer.onPlace = (el) => {
+      const cat = this.activeCatalogItem;
+      if (cat) {
+        el.setProperty("assetId", cat.assetId);
+        el.setProperty("dailyRate", cat.dailyRate);
+      }
+      if (cat?.gltfUrl) {
+        if (el instanceof CameraElement) {
+          // Keep camera type intact (preview, FOV, sequencing) — just swap the body mesh
+          void el.loadModel(cat.gltfUrl, cat.yOffset);
+        } else {
+          // For other types: swap primitive for full GltfElement at same position
+          const pos = el.position.clone();
+          this.state.removeElement(el);
+          void this.placeGltf(cat.gltfUrl, cat.name, cat.assetId, cat.dailyRate, pos);
+        }
+      }
       this.updateElementCount();
     };
     this.placer.onDelete = () => {
@@ -249,12 +267,15 @@ class EditorApp {
   // ── UI wiring ──────────────────────────────────────────────────────────────
 
   private initUI(): void {
-    // Tool buttons
+    // Tool buttons (select + cast/crew quick-place)
     document.querySelectorAll<HTMLButtonElement>(".tool-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const tool = btn.dataset.tool as ToolType;
         document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
+        // Deactivate any selected catalog item when switching tools manually
+        document.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+        this.activeCatalogItem = null;
 
         if (tool === "select") {
           this.placer.cancelTool();
@@ -346,13 +367,6 @@ class EditorApp {
       this.setStatus("Scene cleared");
     });
 
-    // GLTF library — add from dropdown
-    document.getElementById("gltf-add-btn")?.addEventListener("click", () => {
-      const select = document.getElementById("gltf-model-select") as HTMLSelectElement;
-      const url = select?.value;
-      const name = select?.options[select.selectedIndex]?.text ?? "Model";
-      if (url) void this.placeGltf(url, name);
-    });
 
     // Delete selected
     document.getElementById("delete-element-btn")!.addEventListener("click", () => {
@@ -421,31 +435,101 @@ class EditorApp {
       if (e.key === "Escape" && this.placer.currentTool !== "select") {
         document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
         document.querySelector('.tool-btn[data-tool="select"]')?.classList.add("active");
+        document.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+        this.activeCatalogItem = null;
         this.container.classList.remove("placing");
       }
     });
   }
 
-  // ── GLTF library ───────────────────────────────────────────────────────────
+  // ── Asset Catalog accordion ────────────────────────────────────────────────
 
-  private async initGltfLibrary(): Promise<void> {
-    const select = document.getElementById("gltf-model-select") as HTMLSelectElement | null;
-    if (!select) return;
+  /** Catalog item the user last clicked — applied to the next placed element. */
+  private activeCatalogItem: {
+    assetId: string;
+    name: string;
+    dailyRate: number;
+    gltfUrl: string | null;
+    yOffset?: number;
+  } | null = null;
+
+  private async initAssetCatalog(): Promise<void> {
+    const container = document.getElementById("asset-catalog-accordion");
+    if (!container) return;
+
+    let catalog;
     try {
-      const res = await fetch("./gltf/index.json");
-      if (!res.ok) return;
-      const data = (await res.json()) as { models: Array<{ name: string; url: string }> };
-      for (const model of data.models) {
-        const opt = document.createElement("option");
-        opt.value = model.url;
-        opt.textContent = model.name;
-        select.appendChild(opt);
-      }
-      if (data.models.length > 0) {
-        (document.getElementById("gltf-add-btn") as HTMLButtonElement).disabled = false;
-      }
+      catalog = await loadAssetCatalog();
     } catch {
-      // No manifest yet — user can still drag & drop
+      container.innerHTML = `<div style="color:#7f1d1d;font-size:9px;padding:6px">Failed to load asset catalog.</div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+
+    for (const category of catalog.categories) {
+      // Category header
+      const header = document.createElement("div");
+      header.className = "cat-header";
+      header.innerHTML = `
+        <span>${category.icon ?? ""}</span>
+        <span>${category.label}</span>
+        <span class="cat-chevron">▶</span>
+      `;
+
+      // Items container
+      const itemsEl = document.createElement("div");
+      itemsEl.className = "cat-items";
+
+      for (const item of category.items) {
+        const row = document.createElement("div");
+        row.className = "cat-item";
+        row.dataset.assetId = item.id;
+        row.dataset.dailyRate = String(item.dailyRate);
+        row.dataset.elementType = category.elementType;
+        row.title = `${item.description}\n${item.notes}`;
+        row.innerHTML = `
+          <span class="cat-item-name">${item.name}</span>
+          <span class="cat-item-rate">$${item.dailyRate}/day</span>
+        `;
+
+        row.addEventListener("click", () => {
+          // Deactivate all other items
+          container.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+          row.classList.add("active");
+
+          // Store catalog metadata for the next placed element
+          this.activeCatalogItem = {
+            assetId: item.id,
+            name: item.name,
+            dailyRate: item.dailyRate,
+            gltfUrl: item.gltfUrl,
+            yOffset: item.yOffset,
+          };
+
+          // Clear select-tool active state
+          document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
+          this.container.classList.add("placing");
+
+          // Set placer tool to this category's element type
+          const tool = category.elementType as ToolType;
+          this.placer.setTool(tool);
+
+          this.setStatus(`Click in the viewport to place ${item.name}`);
+        });
+
+        itemsEl.appendChild(row);
+      }
+
+      // Toggle open/close on header click
+      header.addEventListener("click", () => {
+        const isOpen = header.classList.contains("open");
+        header.classList.toggle("open", !isOpen);
+        itemsEl.classList.toggle("open", !isOpen);
+      });
+
+      container.appendChild(header);
+      container.appendChild(itemsEl);
     }
   }
 
@@ -491,11 +575,13 @@ class EditorApp {
     });
   }
 
-  async placeGltf(url: string, fileName: string): Promise<void> {
+  async placeGltf(url: string, fileName: string, assetId?: string, dailyRate?: number, position?: THREE.Vector3): Promise<void> {
     const id = crypto.randomUUID();
     const name = fileName.replace(/\.(glb|gltf)$/i, "");
     const el = new GltfElement(id, name, url, fileName);
-    el.setPosition(0, 0, 0);
+    if (assetId) el.setProperty("assetId", assetId);
+    if (dailyRate !== undefined) el.setProperty("dailyRate", dailyRate);
+    el.setPosition(position?.x ?? 0, position?.y ?? 0, position?.z ?? 0);
     this.state.addElement(el);
     this.setStatus(`Loading ${fileName}…`);
     try {

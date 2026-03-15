@@ -8,6 +8,10 @@ export interface ElementData {
   rotationY: number;
   scale?: [number, number, number];
   properties: Record<string, unknown>;
+  /** Catalog item ID from asset-catalog.json, for cost estimation */
+  assetId?: string;
+  /** Daily rental rate in USD, copied from catalog at placement time */
+  dailyRate?: number;
 }
 
 /**

@@ -1,5 +1,8 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ProductionElement } from "./ProductionElement.js";
+
+const gltfLoader = new GLTFLoader();
 
 const BODY_COLOR = 0x1a1a1a;
 const FOV_COLOR = 0xfbbf24;
@@ -212,6 +215,45 @@ export class CameraElement extends ProductionElement {
     this.fovLines = buildFovFrustum(this._vFov, this._aspectRatio, 0.3, this._fovDistance, FOV_COLOR);
     this.fovLines.position.copy(this.bodyGroup.position);
     this.group.add(this.fovLines);
+  }
+
+  /**
+   * Replace the primitive body with a loaded GLB model.
+   * FOV frustum and shot badge are preserved (they live on `group`, not `bodyGroup`).
+   * @param yOffset  Extra vertical shift in meters after auto-seating — set in asset-catalog.json
+   */
+  async loadModel(url: string, yOffset = 0): Promise<void> {
+    return new Promise((resolve, reject) => {
+      gltfLoader.load(url, (gltf) => {
+        const model = gltf.scene;
+
+        // Auto-scale to fit within ~0.5m (typical cinema camera body size)
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0) model.scale.setScalar(0.5 / maxDim);
+
+        // Seat bottom of model at y=0, then apply catalog yOffset
+        const box2 = new THREE.Box3().setFromObject(model);
+        model.position.y -= box2.min.y;
+        model.position.y += yOffset;
+
+        // Clear primitive meshes, keep the group transform
+        while (this.bodyGroup.children.length > 0) {
+          const child = this.bodyGroup.children[0];
+          this.bodyGroup.remove(child);
+          if ((child as THREE.Mesh).isMesh) {
+            (child as THREE.Mesh).geometry?.dispose();
+            const mat = (child as THREE.Mesh).material;
+            if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+            else (mat as THREE.Material)?.dispose();
+          }
+        }
+
+        this.bodyGroup.add(model);
+        resolve();
+      }, undefined, reject);
+    });
   }
 
   protected onSelectChanged(selected: boolean): void {

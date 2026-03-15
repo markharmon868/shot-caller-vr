@@ -13,6 +13,12 @@ async function start(): Promise<void> {
   const url = new URL(window.location.href);
   const mode = resolveAppMode(url, navigator.userAgent);
 
+  if (mode === "landing") {
+    const { renderLandingShell } = await import("./shells.js");
+    renderLandingShell();
+    return;
+  }
+
   if (mode === "scout") {
     renderScoutShell();
     const { startScout, onGenerateClick } = await import("./scout/ScoutApp.js");
