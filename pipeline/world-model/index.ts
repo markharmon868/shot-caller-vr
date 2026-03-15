@@ -67,11 +67,14 @@ async function uploadImage(imagePath: string): Promise<string> {
     ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
 
   // Step 1: Prepare upload — get signed URL + media asset ID
+  const fileName = path.basename(imagePath);
   const prepRes = await fetch(`${MARBLE_BASE}/media-assets:prepare_upload`, {
     method: "POST",
     headers: marbleHeaders(),
     body: JSON.stringify({
+      file_name: fileName,
       content_type: mimeType,
+      kind: "image",
     }),
   });
 
@@ -81,16 +84,23 @@ async function uploadImage(imagePath: string): Promise<string> {
   }
 
   const prepData = (await prepRes.json()) as {
-    upload_url: string;
-    media_asset_id: string;
+    media_asset: { media_asset_id: string };
+    upload_info: {
+      upload_url: string;
+      required_headers: Record<string, string>;
+      upload_method: string;
+    };
   };
 
+  const uploadUrl = prepData.upload_info.upload_url;
+  const mediaAssetId = prepData.media_asset.media_asset_id;
+
   // Step 2: Upload raw image bytes to signed GCS URL
-  const uploadRes = await fetch(prepData.upload_url, {
-    method: "PUT",
+  const uploadRes = await fetch(uploadUrl, {
+    method: prepData.upload_info.upload_method ?? "PUT",
     headers: {
       "Content-Type": mimeType,
-      "x-goog-content-length-range": "0,104857600",
+      ...prepData.upload_info.required_headers,
     },
     body: imageBuffer,
   });
@@ -100,7 +110,7 @@ async function uploadImage(imagePath: string): Promise<string> {
     throw new Error(`Marble image upload failed (${uploadRes.status}): ${text}`);
   }
 
-  return prepData.media_asset_id;
+  return mediaAssetId;
 }
 
 /**
@@ -151,10 +161,8 @@ async function generateSingleImage(
     world_prompt: {
       type: "image",
       image_prompt: {
-        content: {
-          source: "media_asset",
-          media_asset_id: mediaAssetId,
-        },
+        source: "media_asset",
+        media_asset_id: mediaAssetId,
       },
     },
   };
