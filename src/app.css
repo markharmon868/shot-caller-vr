@@ -107,7 +107,7 @@ body {
   min-width: 9rem;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 0.75rem;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(20, 20, 20, 0.92);
   color: #f8fafc;
   padding: 0.65rem 0.8rem;
 }
@@ -324,15 +324,15 @@ body {
 }
 
 .intake-agent-card-reviewing {
-  background: linear-gradient(135deg, rgba(232, 160, 32, 0.12), rgba(15, 23, 42, 0));
+  background: linear-gradient(135deg, rgba(232, 160, 32, 0.12), rgba(20, 20, 20, 0));
 }
 
 .intake-agent-card-success {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(15, 23, 42, 0));
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(20, 20, 20, 0));
 }
 
 .intake-agent-card-questions {
-  background: linear-gradient(135deg, rgba(232, 160, 32, 0.12), rgba(15, 23, 42, 0));
+  background: linear-gradient(135deg, rgba(232, 160, 32, 0.12), rgba(20, 20, 20, 0));
 }
 
 .intake-grid {
@@ -458,7 +458,7 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 18px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(20, 20, 20, 0.72);
 }
 
 .intake-preview-card img,
@@ -503,7 +503,7 @@ body {
 }
 
 .intake-button-secondary {
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(20, 20, 20, 0.88);
   color: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.18);
 }
@@ -538,7 +538,7 @@ body {
 .intake-turn {
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 20px;
-  background: rgba(15, 23, 42, 0.48);
+  background: rgba(20, 20, 20, 0.48);
   padding: 14px;
 }
 
@@ -582,7 +582,7 @@ body {
 .intake-result-block {
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 18px;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(20, 20, 20, 0.5);
   padding: 16px;
 }
 
@@ -626,7 +626,7 @@ body {
   padding: 28px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 28px;
-  background: rgba(15, 23, 42, 0.84);
+  background: rgba(20, 20, 20, 0.84);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
 }
 
@@ -727,7 +727,7 @@ body {
   z-index: 100;
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  background: rgba(9, 17, 31, 0.82);
+  background: rgba(10, 10, 10, 0.82);
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
 
@@ -900,7 +900,7 @@ body {
   padding: 14px 28px;
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   color: #f8fafc;
   font-size: 0.95rem;
   font-weight: 600;
@@ -911,7 +911,7 @@ body {
 
 .home-btn-secondary:hover {
   border-color: rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(20, 20, 20, 0.85);
 }
 
 .home-btn-lg {
@@ -930,7 +930,7 @@ body {
 }
 
 .home-section-alt {
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(20, 20, 20, 0.4);
   border-top: 1px solid rgba(148, 163, 184, 0.06);
   border-bottom: 1px solid rgba(148, 163, 184, 0.06);
 }
@@ -969,13 +969,13 @@ body {
   padding: 28px;
   border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.1);
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(20, 20, 20, 0.5);
   transition: border-color 0.2s, background 0.2s;
 }
 
 .home-step:hover {
   border-color: rgba(232, 160, 32, 0.25);
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(20, 20, 20, 0.7);
 }
 
 .home-step-num {
@@ -1011,7 +1011,7 @@ body {
   padding: 24px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(9, 17, 31, 0.6);
+  background: rgba(10, 10, 10, 0.6);
   transition: border-color 0.2s;
 }
 
@@ -1245,7 +1245,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   aspect-ratio: 1;
 }
 
@@ -1286,7 +1286,7 @@ body {
   padding: 16px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 14px;
-  background: rgba(9, 17, 31, 0.8);
+  background: rgba(10, 10, 10, 0.8);
   color: #f8fafc;
   font: inherit;
   font-size: 0.95rem;
@@ -1461,7 +1461,7 @@ body {
 .toast {
   padding: 12px 18px;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(20, 20, 20, 0.95);
   border: 1px solid rgba(148, 163, 184, 0.3);
   color: #f8fafc;
   font-size: 14px;
@@ -1536,7 +1536,7 @@ body {
   padding: 6px 16px;
   border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(20, 20, 20, 0.8);
   color: #f8fafc;
   font-size: 13px;
   font-weight: 600;
@@ -1587,7 +1587,7 @@ body {
 }
 
 .status-idle {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.2);
   color: #94a3b8;
 }
@@ -1660,7 +1660,7 @@ body {
   padding: 8px 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   color: #f8fafc;
   font: inherit;
   font-size: 14px;
@@ -1670,7 +1670,7 @@ body {
 
 .prop-select:hover {
   border-color: rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(20, 20, 20, 0.8);
 }
 
 .prop-select:focus {
@@ -1684,7 +1684,7 @@ body {
   padding: 10px 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   color: #f8fafc;
   font: inherit;
   font-size: 14px;
@@ -1695,7 +1695,7 @@ body {
 
 .prop-textarea:hover {
   border-color: rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(20, 20, 20, 0.8);
 }
 
 .prop-textarea:focus {
@@ -2003,7 +2003,7 @@ body {
 .navigation-hint-content kbd {
   display: inline-block;
   padding: 2px 6px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(20, 20, 20, 0.8);
   border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 4px;
   font-family: 'IBM Plex Mono', monospace;
@@ -2089,7 +2089,7 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(20, 20, 20, 0.6);
   border-radius: 6px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
@@ -2293,7 +2293,7 @@ body {
 /* ── Export Report Styles ── */
 
 .shot-caller-body-export {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, #141414 100%);
   min-height: 100vh;
 }
 
