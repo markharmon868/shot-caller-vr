@@ -62,16 +62,15 @@ export class SceneState {
   readonly elements = new Map<string, ProductionElement>();
 
   constructor(private scene: THREE.Scene) {
-    // Try to restore scene ID from URL hash, else generate new
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    this.sceneId = hash.get("scene") ?? generateId();
-    this.updateHash();
+    const url = new URL(window.location.href);
+    this.sceneId = url.searchParams.get("scene") ?? generateId();
+    this.updateUrl();
   }
 
-  private updateHash(): void {
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    hash.set("scene", this.sceneId);
-    window.location.hash = hash.toString();
+  private updateUrl(): void {
+    const url = new URL(window.location.href);
+    url.searchParams.set("scene", this.sceneId);
+    window.history.replaceState({}, "", url.toString());
   }
 
   get id(): string { return this.sceneId; }
@@ -112,7 +111,7 @@ export class SceneState {
 
     this.sceneId = data.id;
     this.splatUrl = data.splatUrl;
-    this.updateHash();
+    this.updateUrl();
 
     for (const ed of data.elements) {
       const el = createElementById(ed.id, ed.type, ed.name);
