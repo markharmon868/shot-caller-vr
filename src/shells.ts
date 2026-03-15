@@ -504,6 +504,11 @@ export function renderEditorShell(): void {
         <!-- Gaussian Scene -->
         <div class="sidebar-section">
           <div class="section-title">Gaussian Scene</div>
+          <div style="margin-bottom:6px;">
+            <select id="scene-selector" class="btn" style="width:100%;text-align:left;padding:5px 8px;font-size:10px;cursor:pointer;">
+              <option value="">Select scene...</option>
+            </select>
+          </div>
           <div class="spz-row">
             <input id="spz-url-input" type="text" placeholder=".spz or image URL…" />
           </div>

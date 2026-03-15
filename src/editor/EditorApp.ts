@@ -17,7 +17,7 @@ import { toast } from "./toast.js";
 import { exportShotListPDF } from "./exportPDF.js";
 import { loadAssetCatalog, getCatalogItemById } from "./assetCatalog.js";
 import { loadSceneBundle } from "../data/sceneStore.js";
-import { getActiveScene } from "../sceneManager.js";
+import { getActiveScene, getAvailableScenes, setActiveScene } from "../sceneManager.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -280,6 +280,9 @@ class EditorApp {
         }
       });
     });
+
+    // Scene selector
+    this.initSceneSelector();
 
     // Load splat
     document.getElementById("load-splat-btn")!.addEventListener("click", () => {
@@ -607,6 +610,44 @@ class EditorApp {
     } catch {
       this.setStatus(`Failed to load ${fileName}`);
     }
+  }
+
+  private initSceneSelector(): void {
+    const selector = document.getElementById("scene-selector") as HTMLSelectElement | null;
+    if (!selector) return;
+
+    // Populate dropdown with available scenes
+    const scenes = getAvailableScenes();
+    const currentScene = getActiveScene();
+
+    // Clear existing options except the first placeholder
+    while (selector.options.length > 1) {
+      selector.remove(1);
+    }
+
+    // Add all available scenes
+    scenes.forEach((scene: { id: string; name: string }) => {
+      const option = document.createElement("option");
+      option.value = scene.id;
+      option.textContent = scene.name;
+      if (scene.id === currentScene) {
+        option.selected = true;
+      }
+      selector.appendChild(option);
+    });
+
+    // Handle scene selection change
+    selector.addEventListener("change", async () => {
+      const selectedSceneId = selector.value;
+      if (!selectedSceneId) return;
+
+      setActiveScene(selectedSceneId);
+
+      // Reload the page with the new scene
+      const url = new URL(window.location.href);
+      url.searchParams.set("scene", selectedSceneId);
+      window.location.href = url.toString();
+    });
   }
 
   // ── Properties panel ───────────────────────────────────────────────────────
