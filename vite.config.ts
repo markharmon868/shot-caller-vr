@@ -42,7 +42,7 @@ function deduplicateThree(): Plugin {
 export default defineConfig({
   plugins: [
     deduplicateThree(),
-    mkcert(),
+    ...(process.env.VITE_SKIP_MKCERT ? [] : [mkcert()]),
     injectIWER({
       device: "metaQuest3",
       activation: "localhost",

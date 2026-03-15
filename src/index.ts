@@ -8,6 +8,15 @@ import {
   renderVrShell,
   renderScoutShell,
 } from "./shells.js";
+import type { ScoutAgentPanelProps } from "./agui/ScoutAgentPanel.js";
+
+/** Shared initialisation for the CopilotKit Scout Agent AG-UI panel. */
+async function initScoutAgentPanel(props: ScoutAgentPanelProps = {}): Promise<void> {
+  const { mountScoutAgent } = await import("./agui/mountScoutAgent.js");
+  const { injectScoutAgentTheme } = await import("./agui/theme.js");
+  injectScoutAgentTheme();
+  mountScoutAgent(props);
+}
 
 async function start(): Promise<void> {
   const url = new URL(window.location.href);
@@ -24,6 +33,9 @@ async function start(): Promise<void> {
     const { startScout, onGenerateClick } = await import("./scout/ScoutApp.js");
     (window as unknown as Record<string, unknown>).__scoutGenerate = onGenerateClick;
     startScout();
+
+    // Mount CopilotKit Scout Agent AG-UI panel
+    await initScoutAgentPanel();
     return;
   }
 
@@ -43,6 +55,13 @@ async function start(): Promise<void> {
     renderEditorShell();
     const { startEditor } = await import("./editor/EditorApp.js");
     startEditor();
+
+    // Mount CopilotKit Scout Agent AG-UI panel
+    const params = new URLSearchParams(window.location.search);
+    await initScoutAgentPanel({
+      sceneName: params.get("scene") ?? "Untitled Scene",
+      splatUrl: params.get("splat") ?? undefined,
+    });
     return;
   }
 

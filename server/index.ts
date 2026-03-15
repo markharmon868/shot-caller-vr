@@ -12,6 +12,7 @@ import {
   type UploadRef,
 } from "../shared/contracts/intake.js";
 import { serverConfig, validateServerConfig } from "./config.js";
+import { createCopilotKitEndpoint } from "./copilotkit.js";
 import {
   deriveFallbackQuestions,
   isEmptyQuestionsValidationError,
@@ -106,6 +107,11 @@ async function createServer() {
   });
 
   app.use(express.json({ limit: "1mb" }));
+
+  // ---------------------------------------------------------------------------
+  // CopilotKit AG-UI runtime — powers the Scout Agent chat panel
+  // ---------------------------------------------------------------------------
+  app.use("/api/copilotkit", createCopilotKitEndpoint());
 
   app.post("/api/intake/threads", async (req, res) => {
     try {

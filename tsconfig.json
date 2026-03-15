@@ -8,10 +8,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "jsx": "react-jsx",
     "types": []
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "shared/**/*.ts"
   ],
   "exclude": ["src/xrWorld.ts"]

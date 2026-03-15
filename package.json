@@ -21,6 +21,9 @@
     "pipeline:run": "tsx pipeline/scripts/run-pipeline.ts"
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.54.0",
+    "@copilotkit/react-ui": "^1.54.0",
+    "@copilotkit/runtime": "^1.54.0",
     "@iwsdk/core": "0.2.2",
     "@libsql/client": "^0.17.0",
     "@mastra/core": "^1.13.2",
@@ -31,6 +34,8 @@
     "image-size": "^2.0.2",
     "jspdf": "^4.2.0",
     "multer": "^2.1.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "replicate": "^0.34.0",
     "three": "npm:super-three@0.181.0",
     "zod": "^3.25.76"
@@ -42,6 +47,8 @@
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.181.0",
     "concurrently": "^9.2.1",
     "dotenv": "^16.4.7",
