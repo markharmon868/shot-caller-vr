@@ -69,27 +69,27 @@ export function ScoutAgentActions({
       const lat = latitude ?? coordinates?.lat;
       const lng = longitude ?? coordinates?.lng;
 
-      const parts: string[] = [];
+      const context: Record<string, unknown> = {};
 
-      if (placeName) {
-        parts.push(`📍 Location: ${placeName}`);
-      }
+      if (placeName) context.place = placeName;
       if (lat != null && lng != null) {
-        parts.push(`🌐 Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        context.latitude = lat;
+        context.longitude = lng;
+        // Derive hemisphere and rough timezone from coordinates
+        context.hemisphere = lat >= 0 ? "Northern" : "Southern";
+        context.estimatedTimezone = `UTC${lng >= 0 ? "+" : ""}${Math.round(lng / 15)}`;
       }
 
-      parts.push(
-        "",
-        "ℹ️ I've gathered the location context. Please provide a detailed breakdown including:",
-        "- Climate and weather patterns for this area",
-        "- Terrain type and accessibility",
-        "- Nearby services (hotels, equipment rentals, hospitals)",
-        "- Time zone and golden hour timing",
-        "- Known filming permits or restrictions",
-        "- Power and utility access",
-      );
+      context.requestedDetails = [
+        "climate and weather patterns",
+        "terrain type and accessibility",
+        "nearby services (hotels, equipment rentals, hospitals)",
+        "golden hour timing",
+        "filming permits or restrictions",
+        "power and utility access",
+      ];
 
-      return parts.join("\n");
+      return JSON.stringify(context, null, 2);
     },
   });
 
@@ -116,20 +116,21 @@ export function ScoutAgentActions({
       },
     ],
     handler: async ({ scriptText, genre }) => {
-      const genreInfo = genre ? ` (Genre: ${genre})` : "";
-      return [
-        `📝 Script Analysis${genreInfo}`,
-        "",
-        `Analyzing script excerpt (${scriptText.length} characters)...`,
-        "",
-        "Please provide a structured breakdown including:",
-        "- **Setting Requirements**: Interior/exterior, time of day, season",
-        "- **Atmosphere & Mood**: Lighting quality, color palette, texture",
-        "- **Key Visual Elements**: Props, set pieces, background elements",
-        "- **Location Type**: Urban, rural, industrial, natural, etc.",
-        "- **Suggested Real Locations**: 3-5 real places that could work",
-        "- **Production Considerations**: Crew size, equipment needs, challenges",
-      ].join("\n");
+      const context: Record<string, unknown> = {
+        scriptExcerpt: scriptText.slice(0, 2000),
+        excerptLength: scriptText.length,
+        genre: genre ?? "unspecified",
+        analysisRequested: [
+          "setting requirements (interior/exterior, time of day, season)",
+          "atmosphere and mood (lighting quality, color palette, texture)",
+          "key visual elements (props, set pieces, background)",
+          "location type (urban, rural, industrial, natural)",
+          "suggested real-world locations (3-5 places)",
+          "production considerations (crew size, equipment, challenges)",
+        ],
+      };
+
+      return JSON.stringify(context, null, 2);
     },
   });
 
@@ -163,22 +164,20 @@ export function ScoutAgentActions({
       },
     ],
     handler: async ({ description, style, filmReferences }) => {
-      const parts = [`🖼️ Reference Image Suggestions`, ""];
+      const context: Record<string, unknown> = {
+        sceneDescription: description,
+        visualStyle: style ?? null,
+        filmReferences: filmReferences ?? null,
+        suggestionsRequested: [
+          "5 specific search terms for finding reference photos",
+          "3 film stills from known movies that match this mood",
+          "composition guidelines (framing, depth, focal length)",
+          "color palette (dominant colors, contrast, saturation)",
+          "lighting setup (direction, quality, key-to-fill ratio)",
+        ],
+      };
 
-      if (style) parts.push(`Style: ${style}`);
-      if (filmReferences) parts.push(`Film references: ${filmReferences}`);
-      parts.push(`Scene: ${description}`);
-      parts.push(
-        "",
-        "Please suggest:",
-        "- **5 specific search terms** for finding reference photos",
-        "- **3 film stills** from known movies that match this mood",
-        "- **Composition guidelines**: framing, depth, focal length",
-        "- **Color palette**: dominant colors, contrast, saturation",
-        "- **Lighting setup**: direction, quality, key-to-fill ratio",
-      );
-
-      return parts.join("\n");
+      return JSON.stringify(context, null, 2);
     },
   });
 
@@ -211,24 +210,23 @@ export function ScoutAgentActions({
       },
     ],
     handler: async ({ location, crewSize, shootDuration }) => {
-      const parts = [`🎬 Production Notes for: ${location}`, ""];
+      const context: Record<string, unknown> = {
+        location,
+        crewSize: crewSize ?? null,
+        shootDuration: shootDuration ?? null,
+        notesRequested: [
+          "parking and base camp (trucks, trailers, crew vehicles)",
+          "power (generator placement, grid access, electrical capacity)",
+          "sound (ambient noise levels, flight paths, traffic patterns)",
+          "permits (required permits, lead time, costs, restrictions)",
+          "weather risks (seasonal concerns, backup plans)",
+          "crew staging (holding areas, craft services placement)",
+          "safety (hazards, medical access, emergency routes)",
+          "community relations (nearby residents, business impact)",
+        ],
+      };
 
-      if (crewSize) parts.push(`Crew size: ${crewSize}`);
-      if (shootDuration) parts.push(`Shoot duration: ${shootDuration}`);
-      parts.push(
-        "",
-        "Please provide detailed production notes covering:",
-        "- **Parking & Base Camp**: Space for trucks, trailers, crew vehicles",
-        "- **Power**: Generator placement, grid access, electrical capacity",
-        "- **Sound**: Ambient noise levels, flight paths, traffic patterns",
-        "- **Permits**: Required permits, lead time, costs, restrictions",
-        "- **Weather Risks**: Seasonal concerns, backup plans",
-        "- **Crew Staging**: Holding areas, craft services placement",
-        "- **Safety**: Hazards, medical access, emergency routes",
-        "- **Community Relations**: Nearby residents, business impact",
-      );
-
-      return parts.join("\n");
+      return JSON.stringify(context, null, 2);
     },
   });
 
