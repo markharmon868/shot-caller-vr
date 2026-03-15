@@ -2,6 +2,7 @@ import "./app.css";
 
 import { resolveAppMode } from "./routing.js";
 import {
+  renderEditorShell,
   renderHeadsetEmptyShell,
   renderIntakeShell,
   renderReviewShell,
@@ -24,7 +25,7 @@ async function start(): Promise<void> {
   }
 
   if (mode === "editor") {
-    // HTML is statically rendered in index.html — bootstrap the editor directly
+    renderEditorShell();
     const { startEditor } = await import("./editor/EditorApp.js");
     startEditor();
     return;

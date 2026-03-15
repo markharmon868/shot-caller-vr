@@ -6,6 +6,7 @@ import { CastMarkElement } from "./elements/CastMarkElement.js";
 import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
 import { PropsElement } from "./elements/PropsElement.js";
+import { GltfElement } from "./elements/GltfElement.js";
 
 export interface SceneData {
   id: string;
@@ -37,7 +38,12 @@ function nextName(type: string): string {
   return `${labels[type] ?? type} ${typeCounts[type]}`;
 }
 
-export function createElementById(id: string, type: string, name: string): ProductionElement {
+export function createElementById(
+  id: string,
+  type: string,
+  name: string,
+  properties?: Record<string, unknown>,
+): ProductionElement {
   switch (type) {
     case "camera":    return new CameraElement(id, name);
     case "light":     return new LightElement(id, name);
@@ -45,6 +51,11 @@ export function createElementById(id: string, type: string, name: string): Produ
     case "crew":      return new CrewElement(id, name);
     case "equipment": return new EquipmentElement(id, name);
     case "props":     return new PropsElement(id, name);
+    case "gltf":      return new GltfElement(
+      id, name,
+      String(properties?.url ?? ""),
+      String(properties?.fileName ?? name),
+    );
     default:          return new CameraElement(id, name);
   }
 }
@@ -118,7 +129,7 @@ export class SceneState {
     this.updateUrl();
 
     for (const ed of data.elements) {
-      const el = createElementById(ed.id, ed.type, ed.name);
+      const el = createElementById(ed.id, ed.type, ed.name, ed.properties);
       el.setPosition(...ed.position);
       el.setRotationY(ed.rotationY);
       if (ed.scale) el.setScale(...ed.scale);
@@ -198,6 +209,7 @@ export class SceneState {
       equipment:   "equipment",
       props:       "setDressing",
       set_dressing:"setDressing",
+      gltf:        "setDressing",
     };
     const assetMap: Record<string, string> = {
       camera:      "asset-camera",

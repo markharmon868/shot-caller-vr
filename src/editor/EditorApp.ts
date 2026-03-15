@@ -11,6 +11,7 @@ import { CastMarkElement } from "./elements/CastMarkElement.js";
 import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
 import { PropsElement } from "./elements/PropsElement.js";
+import { GltfElement } from "./elements/GltfElement.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -82,7 +83,16 @@ class EditorApp {
 
     if (restored) {
       this.setStatus(`Scene restored — ${this.state.elements.size} element(s) loaded`);
+      // Re-load any GLTF elements saved in the scene
+      for (const el of this.state.elements.values()) {
+        if (el instanceof GltfElement && el.url) {
+          el.load().catch(() => {});
+        }
+      }
     }
+
+    this.initGltfLibrary();
+    this.initDragDrop();
 
     window.addEventListener("resize", this.onResize);
     this.animate();
@@ -91,8 +101,10 @@ class EditorApp {
   // ── Renderer + Scene setup ─────────────────────────────────────────────────
 
   private initRenderer(): void {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // antialias: false — the splat renderer provides its own blending; MSAA adds cost with no benefit
+    this.renderer = new THREE.WebGLRenderer({ antialias: false });
+    // Cap at 1.5× — Retina displays at 2× render 4× the pixels for minimal visual gain in an editor
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.shadowMap.enabled = false;
     this.container.appendChild(this.renderer.domElement);
@@ -122,6 +134,10 @@ class EditorApp {
     this.transformControls.addEventListener("dragging-changed", (e) => {
       this.controls.enabled = !e.value;
       this.placer.gizmoActive = Boolean(e.value);
+      // Refresh snapshot when gizmo drag ends and a camera is active
+      if (!e.value && this.activePreviewEl) {
+        this.captureSnapshot(this.activePreviewEl);
+      }
     });
   }
 
@@ -134,7 +150,7 @@ class EditorApp {
     dir.position.set(8, 14, 6);
     this.scene.add(dir);
 
-    // SparkJS renderer for Gaussian splats — LoD on for sensai-lod.spz
+    // SparkJS renderer — LOD always on, scale 0.5 halves per-splat fill cost
     this.spark = new SparkRenderer({
       renderer: this.renderer,
       enableLod: true,
@@ -231,6 +247,14 @@ class EditorApp {
       this.state.exportJSON();
     });
 
+    // GLTF library — add from dropdown
+    document.getElementById("gltf-add-btn")?.addEventListener("click", () => {
+      const select = document.getElementById("gltf-model-select") as HTMLSelectElement;
+      const url = select?.value;
+      const name = select?.options[select.selectedIndex]?.text ?? "Model";
+      if (url) void this.placeGltf(url, name);
+    });
+
     // Delete selected
     document.getElementById("delete-element-btn")!.addEventListener("click", () => {
       const el = this.placer.selected;
@@ -287,6 +311,87 @@ class EditorApp {
         this.container.classList.remove("placing");
       }
     });
+  }
+
+  // ── GLTF library ───────────────────────────────────────────────────────────
+
+  private async initGltfLibrary(): Promise<void> {
+    const select = document.getElementById("gltf-model-select") as HTMLSelectElement | null;
+    if (!select) return;
+    try {
+      const res = await fetch("./gltf/index.json");
+      if (!res.ok) return;
+      const data = (await res.json()) as { models: Array<{ name: string; url: string }> };
+      for (const model of data.models) {
+        const opt = document.createElement("option");
+        opt.value = model.url;
+        opt.textContent = model.name;
+        select.appendChild(opt);
+      }
+      if (data.models.length > 0) {
+        (document.getElementById("gltf-add-btn") as HTMLButtonElement).disabled = false;
+      }
+    } catch {
+      // No manifest yet — user can still drag & drop
+    }
+  }
+
+  private initDragDrop(): void {
+    const container = this.container;
+    container.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      container.classList.add("drag-over");
+    });
+    container.addEventListener("dragleave", () => {
+      container.classList.remove("drag-over");
+    });
+    container.addEventListener("drop", (e) => {
+      e.preventDefault();
+      container.classList.remove("drag-over");
+      const files = Array.from(e.dataTransfer?.files ?? []).filter(
+        (f) => f.name.endsWith(".glb") || f.name.endsWith(".gltf"),
+      );
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        void this.placeGltf(url, file.name);
+      }
+    });
+
+    // Sidebar drop zone
+    const zone = document.getElementById("gltf-drop-zone");
+    if (!zone) return;
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      const files = Array.from(e.dataTransfer?.files ?? []).filter(
+        (f) => f.name.endsWith(".glb") || f.name.endsWith(".gltf"),
+      );
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        void this.placeGltf(url, file.name);
+      }
+    });
+  }
+
+  async placeGltf(url: string, fileName: string): Promise<void> {
+    const id = crypto.randomUUID();
+    const name = fileName.replace(/\.(glb|gltf)$/i, "");
+    const el = new GltfElement(id, name, url, fileName);
+    el.setPosition(0, 0, 0);
+    this.state.addElement(el);
+    this.setStatus(`Loading ${fileName}…`);
+    try {
+      await el.load();
+      this.state.saveLocal();
+      this.setStatus(`Placed: ${name}`);
+    } catch {
+      this.setStatus(`Failed to load ${fileName}`);
+    }
   }
 
   // ── Properties panel ───────────────────────────────────────────────────────
@@ -382,39 +487,55 @@ class EditorApp {
     });
   }
 
-  // ── Camera Preview ─────────────────────────────────────────────────────────
+  // ── Camera Preview (snapshot, not real-time) ────────────────────────────────
 
   private setActivePreview(el: CameraElement | null): void {
     this.activePreviewEl = el;
     const overlay = document.getElementById("camera-preview-overlay")!;
     if (el) {
       overlay.style.display = "block";
-      this.updatePreviewLabel(el);
+      this.captureSnapshot(el);
     } else {
       overlay.style.display = "none";
     }
   }
 
-  private updatePreviewLabel(el: CameraElement): void {
+  /** Render one frame from the camera's POV and display it as a static image. */
+  captureSnapshot(el: CameraElement): void {
+    this.syncPreviewCamera(el);
+
+    // Swap to preview camera for one render, then swap back
+    el.group.visible = false;
+    const prevBg = this.scene.background;
+    this.renderer.render(this.scene, this.previewCamera);
+    el.group.visible = true;
+    this.scene.background = prevBg;
+
+    // Grab the pixels as a data URL and push into the <img>
+    const dataUrl = this.renderer.domElement.toDataURL("image/jpeg", 0.7);
+    const img = document.getElementById("preview-img") as HTMLImageElement | null;
+    if (img) img.src = dataUrl;
+
     const label = el.shotNumber !== null
       ? `Shot ${el.shotNumber}${el.shotType ? " · " + el.shotType : ""}`
       : el.name;
-    document.getElementById("preview-label")!.textContent = label;
+    const labelEl = document.getElementById("preview-label");
+    if (labelEl) labelEl.textContent = label;
+
+    // Re-render the main view so the snapshot doesn't linger on the main canvas
+    this.renderer.render(this.scene, this.camera);
   }
 
   private syncPreviewCamera(el: CameraElement): void {
-    // Match FOV and aspect ratio to the camera element's properties
     this.previewCamera.fov = el.vFovDeg;
     this.previewCamera.aspect = el.aspectRatio;
     this.previewCamera.updateProjectionMatrix();
 
-    // Position at the camera element's world position (raised to lens height)
     const worldPos = new THREE.Vector3();
     el.group.getWorldPosition(worldPos);
     worldPos.y += 0.09;
     this.previewCamera.position.copy(worldPos);
 
-    // Face in the camera element's -Z direction (its forward)
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(el.group.quaternion);
     this.previewCamera.lookAt(worldPos.clone().add(forward));
   }
@@ -510,6 +631,7 @@ class EditorApp {
     if (el instanceof CrewElement) return CrewElement.buildPropertiesHTML(el);
     if (el instanceof EquipmentElement) return EquipmentElement.buildPropertiesHTML(el);
     if (el instanceof PropsElement) return PropsElement.buildPropertiesHTML(el);
+    if (el instanceof GltfElement) return GltfElement.buildPropertiesHTML(el);
     return `<p style="color:#6b5a8a;font-size:10px">No properties</p>`;
   }
 
@@ -539,9 +661,8 @@ class EditorApp {
         // Load equirectangular panorama as scene background
         await this.loadPanorama(url);
       } else {
-        // Load Gaussian splat (.spz)
-        const isLod = url.includes("-lod.");
-        const splat = new SplatMesh({ url, lod: isLod || undefined });
+        // Load Gaussian splat (.spz) — force LOD on regardless of filename
+        const splat = new SplatMesh({ url, lod: true });
         await splat.initialized;
         splat.renderOrder = -10;
 
@@ -621,46 +742,8 @@ class EditorApp {
     this.renderer.setViewport(0, 0, this.container.clientWidth, this.container.clientHeight);
     this.renderer.render(this.scene, this.camera);
 
-    // Picture-in-picture preview from active camera
-    if (this.activePreviewEl) {
-      this.syncPreviewCamera(this.activePreviewEl);
-      this.renderPreview();
-      this.updatePreviewLabel(this.activePreviewEl);
-    }
   };
 
-  private renderPreview(): void {
-    // Hide the camera element's own mesh so it doesn't occlude its own preview
-    if (this.activePreviewEl) this.activePreviewEl.group.visible = false;
-    const cw = this.container.clientWidth;
-    const ch = this.container.clientHeight;
-
-    // Preview size in CSS pixels — Three.js applies DPR internally
-    const pw = Math.min(280, cw * 0.28);
-    const ph = pw / (this.previewCamera.aspect || (16 / 9));
-    const margin = 12;
-
-    // setViewport / setScissor use bottom-left origin (WebGL convention)
-    const px = cw - pw - margin;          // left edge
-    const glY = ch - margin - ph;         // bottom edge (from canvas bottom)
-
-    const prevAutoClear = this.renderer.autoClear;
-    this.renderer.autoClear = false;
-
-    this.renderer.setScissorTest(true);
-    this.renderer.setScissor(px, glY, pw, ph);
-    this.renderer.setViewport(px, glY, pw, ph);
-    this.renderer.setClearColor(0x04010e, 1);
-    this.renderer.clear(true, true, false);
-    this.renderer.render(this.scene, this.previewCamera);
-
-    this.renderer.setScissorTest(false);
-    this.renderer.autoClear = prevAutoClear;
-    this.renderer.setViewport(0, 0, cw, ch);
-
-    // Restore camera mesh visibility
-    if (this.activePreviewEl) this.activePreviewEl.group.visible = true;
-  }
 
   private onResize = (): void => {
     this.camera.aspect = this.container.clientWidth / this.container.clientHeight;

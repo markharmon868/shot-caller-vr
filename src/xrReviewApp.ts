@@ -10,6 +10,7 @@ import { SceneBundle, type ReviewPose } from "./contracts/stageReview.js";
 import { ReviewSceneLoader } from "./gaussianSplatLoader.js";
 import { createElementById } from "./editor/SceneState.js";
 import type { ProductionElement } from "./editor/elements/ProductionElement.js";
+import { GltfElement } from "./editor/elements/GltfElement.js";
 
 const SCENE_STORAGE_KEY = "shot-caller-scene-demo";
 
@@ -21,13 +22,17 @@ function loadEditorElements(scene: THREE.Scene): ProductionElement[] {
     const data = JSON.parse(raw) as { elements?: Array<{ id: string; type: string; name: string; position: [number, number, number]; rotationY: number; scale?: [number, number, number]; properties: Record<string, unknown> }> };
     const elements: ProductionElement[] = [];
     for (const ed of data.elements ?? []) {
-      const el = createElementById(ed.id, ed.type, ed.name);
+      const el = createElementById(ed.id, ed.type, ed.name, ed.properties);
       el.setPosition(...ed.position);
       el.setRotationY(ed.rotationY);
       if (ed.scale) el.setScale(...ed.scale);
       for (const [k, v] of Object.entries(ed.properties)) el.setProperty(k, v);
       scene.add(el.group);
       elements.push(el);
+      // Trigger async GLTF load if needed
+      if (el instanceof GltfElement && el.url) {
+        el.load().catch((err) => console.warn("[XR] GLTF load failed:", err));
+      }
     }
     return elements;
   } catch {

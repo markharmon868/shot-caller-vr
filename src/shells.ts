@@ -220,6 +220,101 @@ const editorStyles = `
     pointer-events: none;
   }
   #keyboard-hint.visible { display: block; }
+
+  /* Gizmo toolbar */
+  .gizmo-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .gizmo-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; padding: 6px 4px; background: #1a0d33; border: 1px solid #2d1a4a;
+    border-radius: 5px; color: #a090bc; font-size: 8px; font-weight: 600;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.12s;
+  }
+  .gizmo-btn .icon { font-size: 14px; line-height: 1; }
+  .gizmo-btn:hover { background: #2a1a40; color: #d0c0e8; }
+  .gizmo-btn.active { background: #002a1a; border-color: #34d399; color: #34d399; }
+
+  /* Sequence / review buttons */
+  .btn-seq { border-color: #7c3aed; color: #c4b5fd; }
+  .btn-seq:hover { background: #1a0d40; }
+  .btn-seq.active { background: #1a0d40; border-color: #a78bfa; color: #a78bfa; }
+  .btn-review { border-color: #0369a1; color: #7dd3fc; }
+  .btn-review:hover { background: #0a1a2a; }
+  .btn-review.active { background: #0a1a2a; border-color: #38bdf8; color: #38bdf8; }
+
+  /* Sequence hint */
+  #sequence-hint {
+    display: none; padding: 5px 8px; border-radius: 4px;
+    background: rgba(124,58,237,0.12); border: 1px solid rgba(167,139,250,0.3);
+    color: #c4b5fd; font-size: 9px; line-height: 1.5; margin-top: 4px;
+  }
+
+  /* Shot review panel (inline overlay) */
+  #shot-review-panel {
+    display: none; flex-direction: column; gap: 4px;
+    padding: 8px 10px; border-radius: 6px; margin-top: 6px;
+    background: rgba(3,105,161,0.15); border: 1px solid rgba(56,189,248,0.25);
+  }
+  #shot-review-panel.visible { display: flex; }
+  .review-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  #shot-review-number { color: #38bdf8; font-size: 11px; font-weight: 700; }
+  #shot-review-type { color: #94a3b8; font-size: 9px; }
+  #shot-review-label { color: #e2e8f0; font-size: 10px; font-style: italic; }
+  .review-nav { display: flex; gap: 4px; }
+  .review-nav button {
+    background: #1a0d33; border: 1px solid #2d1a4a; border-radius: 4px;
+    color: #a090bc; padding: 3px 8px; font-size: 11px; cursor: pointer;
+  }
+  .review-nav button:disabled { opacity: 0.3; cursor: default; }
+  .review-nav button:not(:disabled):hover { border-color: #38bdf8; color: #38bdf8; }
+  #shot-review-exit {
+    background: none; border: none; color: #6b5a8a; font-size: 9px;
+    cursor: pointer; text-align: right; padding: 0;
+  }
+
+  /* Camera preview overlay */
+  #camera-preview-overlay {
+    display: none; position: absolute; bottom: 12px; right: 12px;
+    background: #04010e; border: 1px solid rgba(251,191,36,0.5);
+    border-radius: 6px; overflow: hidden; pointer-events: none; z-index: 5;
+    width: 240px;
+  }
+  #preview-img {
+    display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  }
+  #preview-label {
+    color: #fbbf24; font-size: 9px; text-align: center; font-weight: 600;
+    padding: 3px 6px; letter-spacing: 0.8px; text-transform: uppercase;
+    background: rgba(4,1,14,0.85);
+  }
+
+  /* 3D Models section */
+  .gltf-select {
+    width: 100%; background: #1a0d33; border: 1px solid #2d1a4a;
+    border-radius: 4px; color: #e2e8f0; padding: 5px 8px;
+    font-size: 10px; margin-bottom: 5px; outline: none;
+  }
+  .gltf-select:focus { border-color: #f97316; }
+
+  #gltf-drop-zone {
+    border: 1px dashed #2d1a4a; border-radius: 6px; padding: 14px 10px;
+    text-align: center; color: #3d2a5a; font-size: 9px;
+    line-height: 1.6; cursor: pointer; transition: all 0.15s;
+    margin-top: 5px;
+  }
+  #gltf-drop-zone:hover, #gltf-drop-zone.drag-over {
+    border-color: #f97316; color: #fb923c; background: rgba(249,115,22,0.06);
+  }
+  #scene-container.drag-over::after {
+    content: "Drop .glb / .gltf"; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fb923c;
+    background: rgba(249,115,22,0.12); border: 2px dashed #f97316;
+    border-radius: 4px; z-index: 30; pointer-events: none;
+  }
+
+  /* Preview in VR button */
+  .btn-vr { border-color: #7c3aed; color: #c4b5fd; }
+  .btn-vr:hover { background: #1a0d40; }
 `;
 
 function upsertEditorStyle(): void {
@@ -248,19 +343,21 @@ export function renderEditorShell(): void {
           <p>Production Blocking Tool</p>
         </div>
 
+        <!-- Gaussian Scene -->
         <div class="sidebar-section">
-          <div class="section-title">Scene</div>
+          <div class="section-title">Gaussian Scene</div>
           <div class="spz-row">
-            <input id="spz-url-input" type="text" placeholder=".spz URL or paste from pipeline…" />
+            <input id="spz-url-input" type="text" placeholder=".spz or image URL…" />
           </div>
-          <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Gaussian Scene</button>
+          <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Scene</button>
         </div>
 
+        <!-- Elements -->
         <div class="sidebar-section">
-          <div class="section-title">Place Elements</div>
+          <div class="section-title">Elements</div>
           <div class="tool-grid">
             <button class="tool-btn wide active" data-tool="select">
-              <span class="icon">↖</span> Select / Move
+              <span class="icon">↖</span> Select
             </button>
             <button class="tool-btn" data-tool="camera">
               <span class="icon">🎥</span> Camera
@@ -269,7 +366,7 @@ export function renderEditorShell(): void {
               <span class="icon">💡</span> Light
             </button>
             <button class="tool-btn" data-tool="cast_mark">
-              <span class="icon">✕</span> Cast Mark
+              <span class="icon">✕</span> Actor
             </button>
             <button class="tool-btn" data-tool="crew">
               <span class="icon">🚶</span> Crew
@@ -277,22 +374,83 @@ export function renderEditorShell(): void {
             <button class="tool-btn" data-tool="equipment">
               <span class="icon">🎬</span> Equipment
             </button>
+            <button class="tool-btn" data-tool="props">
+              <span class="icon">📦</span> Props
+            </button>
           </div>
         </div>
 
+        <!-- 3D Models -->
+        <div class="sidebar-section">
+          <div class="section-title">3D Models</div>
+          <select id="gltf-model-select" class="gltf-select">
+            <option value="">— no models in library —</option>
+          </select>
+          <button id="gltf-add-btn" class="btn" disabled>Add to Scene</button>
+          <div id="gltf-drop-zone">
+            Drop .glb / .gltf here<br>
+            <span style="opacity:0.6">or drag onto the viewport</span>
+          </div>
+        </div>
+
+        <!-- Transform -->
+        <div class="sidebar-section">
+          <div class="section-title">Transform &nbsp;<span style="color:#3d2a5a;font-weight:400">W / E / R</span></div>
+          <div class="gizmo-row">
+            <button class="gizmo-btn active" data-gizmo="translate">
+              <span class="icon">↔</span> Move
+            </button>
+            <button class="gizmo-btn" data-gizmo="rotate">
+              <span class="icon">↻</span> Rotate
+            </button>
+            <button class="gizmo-btn" data-gizmo="scale">
+              <span class="icon">⤢</span> Scale
+            </button>
+          </div>
+        </div>
+
+        <!-- Shot Sequence -->
+        <div class="sidebar-section">
+          <div class="section-title">Shot Sequence</div>
+          <button id="sequence-mode-btn" class="btn btn-seq">Sequence Mode</button>
+          <button id="sequence-reset-btn" class="btn">Clear Sequence</button>
+          <div id="sequence-hint">Click cameras in order to assign shot numbers</div>
+        </div>
+
+        <!-- Shot Review -->
+        <div class="sidebar-section">
+          <div class="section-title">Review</div>
+          <button id="review-mode-btn" class="btn btn-review">Review Shots</button>
+          <div id="shot-review-panel">
+            <div class="review-row">
+              <span id="shot-review-number">Shot 1</span>
+              <button id="shot-review-exit">✕ Exit</button>
+            </div>
+            <div id="shot-review-type" style="color:#94a3b8;font-size:9px"></div>
+            <div id="shot-review-label" style="color:#e2e8f0;font-size:10px;font-style:italic"></div>
+            <div class="review-nav">
+              <button id="shot-prev-btn">◀</button>
+              <button id="shot-next-btn">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Properties (shown when element selected) -->
         <div class="sidebar-section" id="properties-section">
           <div class="section-title">Properties</div>
           <div id="properties-panel"></div>
-          <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete Element</button>
+          <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete</button>
         </div>
 
+        <!-- Actions -->
         <div class="sidebar-section">
-          <div class="section-title">Scene</div>
+          <div class="section-title">Actions</div>
           <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
+          <button id="preview-vr-btn" class="btn btn-vr">Preview in VR</button>
           <button id="export-json-btn" class="btn">Export JSON</button>
         </div>
 
-        <div id="status-bar">Ready — load a .spz scene or start placing elements</div>
+        <div id="status-bar">Ready</div>
       </div>
 
       <div id="scene-container">
@@ -301,10 +459,12 @@ export function renderEditorShell(): void {
           <p id="loading-text">Loading scene…</p>
         </div>
         <div id="keyboard-hint">
-          Orbit: left drag &nbsp;·&nbsp; Pan: right drag<br>
-          Zoom: scroll &nbsp;·&nbsp; Place: click<br>
-          Cancel: Escape &nbsp;·&nbsp; Delete: Del/Backspace<br>
-          Rotate selected: R / Shift+R
+          Orbit: left drag &nbsp;·&nbsp; Pan: right drag &nbsp;·&nbsp; Zoom: scroll<br>
+          W = Move &nbsp;·&nbsp; E = Rotate &nbsp;·&nbsp; R = Scale &nbsp;·&nbsp; Del = Delete
+        </div>
+        <div id="camera-preview-overlay">
+          <img id="preview-img" alt="" />
+          <div id="preview-label"></div>
         </div>
       </div>
     </div>
