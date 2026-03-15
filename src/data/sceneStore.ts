@@ -69,6 +69,15 @@ export async function loadSceneBundle(sceneId: string): Promise<SceneBundle> {
   });
   const bundle = cloneBundle(seedBundle);
 
+  // Override splat URL from the editor's last saved scene
+  const editorScene = globalThis.localStorage.getItem(`shot-caller-scene-${sceneId}`);
+  if (editorScene) {
+    try {
+      const saved = JSON.parse(editorScene) as { splatUrl?: string };
+      if (saved.splatUrl) bundle.world.splatUrl = saved.splatUrl;
+    } catch { /* ignore */ }
+  }
+
   // Override elements with whatever the editor last saved
   const editorElements = globalThis.localStorage.getItem(`shot-caller:elements:${sceneId}`);
   if (editorElements) {

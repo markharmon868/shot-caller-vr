@@ -440,7 +440,7 @@ class EditorApp {
 
     document.getElementById("shot-review-panel")!.style.display = "flex";
     document.getElementById("review-mode-btn")!.classList.add("active");
-    document.getElementById("sequence-mode-btn")!.disabled = true;
+    (document.getElementById("sequence-mode-btn") as HTMLButtonElement).disabled = true;
 
     this.applyReviewFrame();
   }
@@ -449,7 +449,7 @@ class EditorApp {
     this.reviewMode = false;
     document.getElementById("shot-review-panel")!.style.display = "none";
     document.getElementById("review-mode-btn")!.classList.remove("active");
-    document.getElementById("sequence-mode-btn")!.disabled = false;
+    (document.getElementById("sequence-mode-btn") as HTMLButtonElement).disabled = false;
 
     // Restore all elements to full opacity
     for (const el of this.state.elements.values()) {
@@ -630,6 +630,8 @@ class EditorApp {
   };
 
   private renderPreview(): void {
+    // Hide the camera element's own mesh so it doesn't occlude its own preview
+    if (this.activePreviewEl) this.activePreviewEl.group.visible = false;
     const cw = this.container.clientWidth;
     const ch = this.container.clientHeight;
 
@@ -654,8 +656,10 @@ class EditorApp {
 
     this.renderer.setScissorTest(false);
     this.renderer.autoClear = prevAutoClear;
-    // Restore full viewport for next frame
     this.renderer.setViewport(0, 0, cw, ch);
+
+    // Restore camera mesh visibility
+    if (this.activePreviewEl) this.activePreviewEl.group.visible = true;
   }
 
   private onResize = (): void => {

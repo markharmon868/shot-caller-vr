@@ -300,6 +300,13 @@ export class ReviewSceneLoader {
     });
     await withTimeout(this.splat.initialized, `Splat ${bundle.world.splatUrl}`);
     this.splat.renderOrder = -10;
+
+    // World Labs splats use OpenCV coords (Y-down) — flip to Three.js (Y-up)
+    if (!bundle.world.splatUrl.includes("sensai")) {
+      this.splat.rotation.x = Math.PI;
+      this.splat.position.y = 2.887;
+    }
+
     this.root.add(this.splat);
 
     this.splatAnimator = new GaussianSplatAnimator(this.splat);
