@@ -61,7 +61,7 @@ function marbleHeaders(): Record<string, string> {
 
 /** Trusted hosts for upload/download URLs returned by the Marble API. */
 const TRUSTED_UPLOAD_HOSTS = ["storage.googleapis.com", "storage.cloud.google.com"];
-const TRUSTED_CDN_HOSTS = [...TRUSTED_UPLOAD_HOSTS, "cdn.worldlabs.ai"];
+const TRUSTED_CDN_HOSTS = [...TRUSTED_UPLOAD_HOSTS, "cdn.worldlabs.ai", "cdn.marble.worldlabs.ai"];
 const ALLOWED_UPLOAD_METHODS = new Set(["PUT", "POST"]);
 
 function assertTrustedUrl(url: string, label: string, trustedHosts: string[]): void {
