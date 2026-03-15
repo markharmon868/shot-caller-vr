@@ -318,34 +318,77 @@ class EditorApp {
     return `<p style="color:#6b5a8a;font-size:10px">No properties</p>`;
   }
 
-  // ── Splat loading ──────────────────────────────────────────────────────────
+  // ── Splat / Panorama loading ──────────────────────────────────────────────
+
+  private isImageUrl(url: string): boolean {
+    return /\.(jpe?g|png|webp)$/i.test(url.split("?")[0]);
+  }
 
   async loadSplat(url: string): Promise<void> {
     this.showLoading(`Loading scene…`);
     this.state.setSplatUrl(url);
 
     try {
+      // Remove existing splat
       if (this.splat) {
         this.scene.remove(this.splat);
         this.splat.dispose();
         this.splat = null;
       }
 
-      const isLod = url.includes("-lod.");
-      const splat = new SplatMesh({ url, lod: isLod || undefined });
-      await splat.initialized;
-      splat.renderOrder = -10;
-      this.scene.add(splat);
-      this.splat = splat;
+      // Reset background when loading a new scene
+      this.scene.background = new THREE.Color(0x0a0020);
+      this.scene.environment = null;
+
+      if (this.isImageUrl(url)) {
+        // Load equirectangular panorama as scene background
+        await this.loadPanorama(url);
+      } else {
+        // Load Gaussian splat (.spz)
+        const isLod = url.includes("-lod.");
+        const splat = new SplatMesh({ url, lod: isLod || undefined });
+        await splat.initialized;
+        splat.renderOrder = -10;
+
+        // World Labs generated splats use OpenCV coords (Y-down, Z-into-screen)
+        // Flip to OpenGL/Three.js (Y-up, Z-out) by rotating 180° around X
+        const isWorldLabs = !url.includes("sensai");
+        if (isWorldLabs) {
+          splat.rotation.x = Math.PI;
+          splat.position.y = 2.887;
+        }
+
+        this.scene.add(splat);
+        this.splat = splat;
+      }
 
       this.setStatus(`Scene loaded — start placing elements`);
-      console.log("[Editor] Loaded splat:", url);
+      console.log("[Editor] Loaded scene:", url);
     } catch (err) {
-      console.error("[Editor] Failed to load splat:", err);
+      console.error("[Editor] Failed to load scene:", err);
       this.setStatus(`Failed to load scene — check the URL`);
     } finally {
       this.hideLoading();
     }
+  }
+
+  private loadPanorama(url: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        url,
+        (texture) => {
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.scene.background = texture;
+          this.scene.environment = texture;
+          console.log("[Editor] Loaded panorama:", url);
+          resolve();
+        },
+        undefined,
+        (err) => reject(err)
+      );
+    });
   }
 
   // ── Loading overlay ────────────────────────────────────────────────────────
