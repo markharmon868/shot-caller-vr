@@ -141,7 +141,11 @@ export class SceneState {
     for (const ed of data.elements) {
       const el = createElementById(ed.id, ed.type, ed.name, ed.properties);
       el.setPosition(...ed.position);
-      el.setRotationY(ed.rotationY);
+      if (ed.rotation) {
+        el.setRotation(...ed.rotation);
+      } else {
+        el.setRotationY(ed.rotationY); // backward-compat for old saves
+      }
       if (ed.scale) el.setScale(...ed.scale);
       for (const [k, v] of Object.entries(ed.properties)) {
         el.setProperty(k, v);
@@ -299,7 +303,7 @@ export class SceneState {
         label: el.name,
         transform: {
           position: el.position,
-          rotation: [0, el.rotationY, 0],
+          rotation: el.rotation ?? [0, el.rotationY, 0],
           scale: el.scale ?? [1, 1, 1],
         },
         properties,

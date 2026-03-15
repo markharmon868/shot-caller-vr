@@ -5,6 +5,9 @@ export interface ElementData {
   type: string;
   name: string;
   position: [number, number, number];
+  /** Full Euler rotation (XYZ order). Supersedes rotationY when present. */
+  rotation?: [number, number, number];
+  /** @deprecated Use rotation[1] instead. Kept for backward-compat with old saved scenes. */
   rotationY: number;
   scale?: [number, number, number];
   properties: Record<string, unknown>;
@@ -50,6 +53,10 @@ export abstract class ProductionElement {
     this.group.rotation.y = rad;
   }
 
+  setRotation(x: number, y: number, z: number): void {
+    this.group.rotation.set(x, y, z);
+  }
+
   /** Called when selection state changes — subclasses highlight/unhighlight */
   setSelected(selected: boolean): void {
     this.onSelectChanged(selected);
@@ -91,7 +98,12 @@ export abstract class ProductionElement {
         this.group.position.y,
         this.group.position.z,
       ],
-      rotationY: this.group.rotation.y,
+      rotation: [
+        this.group.rotation.x,
+        this.group.rotation.y,
+        this.group.rotation.z,
+      ],
+      rotationY: this.group.rotation.y, // kept for backward-compat
       scale: this.getScale(),
       properties: this.getProperties(),
     };
