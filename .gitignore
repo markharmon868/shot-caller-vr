@@ -144,6 +144,8 @@ vite.config.ts.timestamp-*
 
 # Local analysis artifacts
 REPO_EXPLORATION_REPORT.md
+dist-server/
+.data/
 webxr_filmmaker_architecture_vertical.svg
 
 # Generated UIKit output; source of truth lives in ui/*.uikitml
