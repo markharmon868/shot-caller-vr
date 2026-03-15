@@ -9,6 +9,7 @@ import mkcert from "vite-plugin-mkcert";
 // import { optimizeGLTF } from "@iwsdk/vite-plugin-gltf-optimizer";
 
 const threePkg = path.resolve(__dirname, "node_modules/three");
+const intakeServerPort = Number.parseInt(process.env.SHOT_CALLER_SERVER_PORT ?? "8787", 10);
 
 /**
  * Redirect IWSDK's bundled super-three@0.177.0 imports to the project's
@@ -55,7 +56,17 @@ export default defineConfig({
     },
     dedupe: ["three"],
   },
-  server: { host: "0.0.0.0", port: 8081, open: true },
+  server: {
+    host: "0.0.0.0",
+    port: 8081,
+    open: true,
+    proxy: {
+      "/api": {
+        target: `http://127.0.0.1:${intakeServerPort}`,
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: "dist",
     sourcemap: process.env.NODE_ENV !== "production",

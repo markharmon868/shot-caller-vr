@@ -65,10 +65,15 @@ export class SceneState {
   readonly elements = new Map<string, ProductionElement>();
 
   constructor(private scene: THREE.Scene) {
-    // Always use the fixed "demo" scene ID so the editor and VR mode
-    // share the same localStorage key regardless of URL navigation.
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    this.sceneId = hash.get("scene") ?? "demo";
+    const url = new URL(window.location.href);
+    this.sceneId = url.searchParams.get("scene") ?? generateId();
+    this.updateUrl();
+  }
+
+  private updateUrl(): void {
+    const url = new URL(window.location.href);
+    url.searchParams.set("scene", this.sceneId);
+    window.history.replaceState({}, "", url.toString());
   }
 
   get id(): string { return this.sceneId; }
@@ -110,6 +115,7 @@ export class SceneState {
 
     this.sceneId = data.id;
     this.splatUrl = data.splatUrl;
+    this.updateUrl();
 
     for (const ed of data.elements) {
       const el = createElementById(ed.id, ed.type, ed.name);

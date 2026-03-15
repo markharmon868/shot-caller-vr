@@ -14,6 +14,37 @@ npm install
 npm run dev
 ```
 
+## Mastra Intake Demo
+
+The repo now includes a desktop-first intake flow backed by Mastra agents and workflows.
+
+1. Copy `.env.example` to `.env` and provide `OPENROUTER_API_KEY`.
+2. Run `npm run dev`.
+3. Open `https://localhost:8081/` on desktop with no `scene` query param.
+4. Use the intake form to submit an address, Maps URL, text brief, and optional scout images.
+5. The intake agent will either ask follow-up questions or finish the prompt bundle on the same thread.
+
+Default intake models:
+
+```text
+openrouter/openai/gpt-4.1-mini
+```
+
+Useful routes and commands:
+
+```bash
+npm run dev
+npm run dev:web
+npm run dev:server
+npm run test
+npm run build
+```
+
+- Desktop root with no `scene`: intake mode
+- Desktop with `?scene=...`: editor mode
+- Desktop with `?mode=intake`: force the intake UI
+- Headset with `?scene=...`: stage4 XR review
+
 ### How to Add Your Own Splat
 
 1. Attach `GaussianSplatLoader` to an entity (already done in `src/index.ts`).
