@@ -1,8 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 import express, { type Request, type Response } from "express";
 import multer from "multer";
+import { ZodError } from "zod";
 
+import { CallSheetGenerateRequestSchema } from "../shared/contracts/call-sheet.js";
 import {
   CreateThreadResponseSchema,
   IntakeThreadStateSchema,
@@ -11,6 +14,7 @@ import {
   type IntakeTurnResponse,
   type UploadRef,
 } from "../shared/contracts/intake.js";
+import { createCallSheetService, CallSheetBadRequestError, type CallSheetService } from "./call-sheet/service.js";
 import { serverConfig, validateServerConfig } from "./config.js";
 import {
   deriveFallbackQuestions,
@@ -95,8 +99,36 @@ async function buildThreadState(req: Request, res: Response): Promise<void> {
   res.json(state);
 }
 
-async function createServer() {
+export interface CreateServerOptions {
+  callSheetService?: CallSheetService;
+}
+
+export function createCallSheetGenerateHandler(callSheetService: CallSheetService) {
+  return async (req: Request, res: Response) => {
+    try {
+      const request = CallSheetGenerateRequestSchema.parse(req.body);
+      const result = await callSheetService.generate(request);
+
+      if (result.kind === "debug") {
+        res.json(result.payload);
+        return;
+      }
+
+      res
+        .type("application/pdf")
+        .set("Content-Disposition", `attachment; filename="${result.filename}"`)
+        .send(result.pdf);
+    } catch (error) {
+      const statusCode = error instanceof CallSheetBadRequestError || error instanceof ZodError ? 400 : 500;
+      const message = error instanceof Error ? error.message : "Failed to generate call sheet.";
+      res.status(statusCode).json({ error: message });
+    }
+  };
+}
+
+export async function createServer(options: CreateServerOptions = {}) {
   const app = express();
+  const callSheetService = options.callSheetService ?? createCallSheetService();
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -105,7 +137,7 @@ async function createServer() {
     },
   });
 
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "5mb" }));
 
   app.post("/api/intake/threads", async (req, res) => {
     try {
@@ -357,6 +389,8 @@ async function createServer() {
 
   app.get("/api/intake/threads/:threadId", buildThreadState);
 
+  app.post("/api/call-sheet/generate", createCallSheetGenerateHandler(callSheetService));
+
   // ---------------------------------------------------------------------------
   // Pipeline: Street View → Marble Labs → .spz
   // ---------------------------------------------------------------------------
@@ -375,7 +409,8 @@ async function createServer() {
 
   // GET /api/pipeline/status/:jobId → PipelineJob
   app.get("/api/pipeline/status/:jobId", (req: Request, res: Response) => {
-    const job = getJob(req.params.jobId);
+    const jobId = getSingleParam(req.params.jobId, "jobId");
+    const job = getJob(jobId);
     if (!job) { res.status(404).json({ error: "Job not found" }); return; }
     res.json(job);
   });
@@ -396,7 +431,9 @@ async function main() {
   });
 }
 
-void main().catch((error) => {
-  console.error("[shot-caller] failed to start intake server", error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main().catch((error) => {
+    console.error("[shot-caller] failed to start intake server", error);
+    process.exitCode = 1;
+  });
+}
