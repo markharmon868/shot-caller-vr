@@ -491,7 +491,7 @@ export function renderEditorShell(): void {
           <div class="section-title">Actions</div>
           <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
           <button id="preview-vr-btn" class="btn btn-vr">Preview in VR</button>
-          <button id="export-json-btn" class="btn">Export JSON</button>
+          <button id="export-json-btn" class="btn">Export Call Sheet PDF</button>
           <button id="export-pdf-btn" class="btn">Export Shot List PDF</button>
           <button id="clear-scene-btn" class="btn btn-danger" style="margin-top:4px">Clear Scene</button>
           <button id="clear-elements-btn" class="btn btn-danger" style="margin-top:2px;display:none">Clear Elements</button>

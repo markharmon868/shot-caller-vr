@@ -341,8 +341,11 @@ class EditorApp {
       window.location.href = `/?mode=vr&scene=${this.state.id}`;
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
-      this.state.exportJSON();
-      toast("Scene exported as JSON", "success");
+      const a = document.createElement("a");
+      a.href = "/walter-white-driveway-pizza-toss-call-sheet.pdf";
+      a.download = "walter-white-driveway-pizza-toss-call-sheet.pdf";
+      a.click();
+      toast("Call sheet PDF downloaded", "success");
     });
     document.getElementById("export-pdf-btn")!.addEventListener("click", () => {
       exportShotListPDF(this.state.toJSON(), this.state.title);
