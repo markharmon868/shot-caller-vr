@@ -1,12 +1,11 @@
 export type AppMode =
   | "home"
+  | "landing"
   | "create"
+  | "scout"
   | "intake"
   | "editor"
-  | "stage4-xr"
-  | "stage5-xr"
-  | "viewer"
-  | "export"
+  | "vr"
   | "headset-empty";
 
 export function isHeadsetBrowser(userAgent: string): boolean {
@@ -43,28 +42,29 @@ export function resolveAppMode(url: URL, userAgent: string): AppMode {
   const headset = isHeadsetBrowser(userAgent);
   const sceneAvailable = hasSceneId(url);
 
-  if (
-    explicitMode === "home"
-    || explicitMode === "create"
-    || explicitMode === "intake"
-    || explicitMode === "editor"
-    || explicitMode === "stage4-xr"
-    || explicitMode === "stage5-xr"
-    || explicitMode === "viewer"
-    || explicitMode === "export"
-  ) {
-    if ((explicitMode === "stage4-xr" || explicitMode === "stage5-xr") && headset && !sceneAvailable) {
-      return "headset-empty";
-    }
-    return explicitMode;
+  // Handle all explicit modes
+  if (explicitMode === "home") return "home";
+  if (explicitMode === "landing") return "landing";
+  if (explicitMode === "create") return "create";
+  if (explicitMode === "scout") return "scout";
+  if (explicitMode === "intake") return "intake";
+  if (explicitMode === "editor") return "editor";
+
+  // Accept both "vr" and legacy "stage4-xr" / "stage5-xr"
+  if (explicitMode === "vr" || explicitMode === "stage4-xr" || explicitMode === "stage5-xr") {
+    if (headset && !sceneAvailable) return "headset-empty";
+    return "vr";
   }
 
-  if (headset && sceneAvailable) {
-    return "stage4-xr";
-  }
-  if (headset && !sceneAvailable) {
+  // Auto-detect real headset (but not localhost — IWER emulator spoofs the UA there)
+  const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (headset && !isLocalhost) {
+    if (sceneAvailable) return "vr";
     return "headset-empty";
   }
-  // Desktop: land on marketing home by default
-  return "home";
+
+  // Desktop default: landing page
+  // Skip straight to editor if splat or scene param is present
+  if (url.searchParams.get("splat") || sceneAvailable) return "editor";
+  return "landing";
 }

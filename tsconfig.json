@@ -13,5 +13,6 @@
   "include": [
     "src/**/*.ts",
     "shared/**/*.ts"
-  ]
+  ],
+  "exclude": ["src/xrWorld.ts"]
 }

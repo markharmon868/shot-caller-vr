@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
-import { AssetPlacer, type ToolType } from "./AssetPlacer.js";
+import { AssetPlacer } from "./AssetPlacer.js";
+import type { ToolType } from "./AssetPlacer.js";
 import { SceneState } from "./SceneState.js";
 import type { ProductionElement } from "./elements/ProductionElement.js";
 import { CameraElement } from "./elements/CameraElement.js";
@@ -12,6 +13,9 @@ import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
 import { PropsElement } from "./elements/PropsElement.js";
 import { GltfElement } from "./elements/GltfElement.js";
+import { toast } from "./toast.js";
+import { exportShotListPDF } from "./exportPDF.js";
+import { loadAssetCatalog, getCatalogItemById } from "./assetCatalog.js";
 
 class EditorApp {
   private renderer!: THREE.WebGLRenderer;
@@ -31,6 +35,7 @@ class EditorApp {
   private reviewIndex = 0;
   private orbitTarget = new THREE.Vector3();    // lerp target for orbit controls
   private orbitLerping = false;
+  private demoInterval: ReturnType<typeof setInterval> | null = null;
 
   private spark!: SparkRenderer;
   private splat: SplatMesh | null = null;
@@ -42,8 +47,9 @@ class EditorApp {
 
   // DOM elements
   private container!: HTMLElement;
-  private statusText!: HTMLElement;
-  private elementCount!: HTMLElement;
+  private statusBar!: HTMLElement;
+  private statusMsg!: HTMLElement;
+  private elementCountEl!: HTMLElement;
   private loadingOverlay!: HTMLElement;
   private loadingText!: HTMLElement;
   private propertiesSection!: HTMLElement;
@@ -51,15 +57,17 @@ class EditorApp {
   private keyboardHint!: HTMLElement;
 
   init(): void {
-    this.container = document.getElementById("canvas-wrapper")!;
-    this.statusText = document.getElementById("status-text")!;
-    this.elementCount = document.getElementById("element-count")!;
-    this.loadingOverlay = document.getElementById("loading-overlay")!;
+    this.container = document.getElementById("scene-container")!;
+    this.statusBar = document.getElementById("status-bar")!;
+    this.statusMsg = document.getElementById("status-msg")!;
+    this.elementCountEl = document.getElementById("element-count")!;
+    this.loadingOverlay = document.getElementById("loading-overlay")!
     this.loadingText = document.getElementById("loading-text")!;
     this.propertiesSection = document.getElementById("properties-section")!;
     this.propertiesPanel = document.getElementById("properties-panel")!;
     this.keyboardHint = document.getElementById("keyboard-hint")!;
 
+    document.getElementById("app")!.classList.add("mode-editor");
     this.keyboardHint.classList.add("visible");
 
     this.initRenderer();
@@ -73,8 +81,10 @@ class EditorApp {
     const restored = this.state.loadLocal();
 
     const DEFAULT_SPLAT = "./splats/sensai-lod.spz";
+    const params = new URLSearchParams(window.location.search);
     const spzUrl =
-      new URLSearchParams(window.location.search).get("spz") ??
+      params.get("splat") ??
+      params.get("spz") ??
       (restored ? this.state.getSplatUrl() : null) ??
       DEFAULT_SPLAT;
     (document.getElementById("spz-url-input") as HTMLInputElement).value = spzUrl;
@@ -89,12 +99,44 @@ class EditorApp {
         }
       }
     }
+    this.updateElementCount();
 
-    this.initGltfLibrary();
+    void this.initAssetCatalog();
     this.initDragDrop();
+    this.wireSceneTitle();
+    this.startDemoModeIfRequested();
 
     window.addEventListener("resize", this.onResize);
+    this.onResize(); // Initial layout (responsive collapse)
     this.animate();
+  }
+
+  /** When ?demo=1, auto-enter review and advance shots every 4s (for hackathon presentation). */
+  private startDemoModeIfRequested(): void {
+    if (!new URLSearchParams(window.location.search).has("demo")) return;
+    // Defer so scene/placements are ready; check again after a short delay for restored scenes
+    setTimeout(() => {
+      const shots = this.getReviewShots();
+      if (shots.length === 0) return;
+      console.log("🎬 Demo mode — auto-advancing shots every 4s");
+      this.enterReviewMode();
+      let idx = 0;
+      this.demoInterval = setInterval(() => {
+        idx = (idx + 1) % shots.length;
+        this.reviewIndex = idx;
+        this.applyReviewFrame();
+        if (idx === 0) {
+          clearInterval(this.demoInterval!);
+          this.demoInterval = null;
+        }
+      }, 4000);
+    }, 1500);
+  }
+
+  private getReviewShots(): CameraElement[] {
+    return Array.from(this.state.elements.values()).filter(
+      (el): el is CameraElement => el instanceof CameraElement && el.shotNumber != null
+    );
   }
 
   // ── Renderer + Scene setup ─────────────────────────────────────────────────
@@ -193,8 +235,29 @@ class EditorApp {
     this.placer.attach(this.renderer.domElement);
 
     this.placer.onSelect = (el) => this.onElementSelected(el);
-    this.placer.onPlace = (el) => console.log("[Editor] Placed:", el.name);
-    this.placer.onDelete = (_el) => this.onElementSelected(null);
+    this.placer.onPlace = (el) => {
+      const cat = this.activeCatalogItem;
+      if (cat) {
+        el.setProperty("assetId", cat.assetId);
+        el.setProperty("dailyRate", cat.dailyRate);
+      }
+      if (cat?.gltfUrl) {
+        if (el instanceof CameraElement) {
+          // Keep camera type intact (preview, FOV, sequencing) — just swap the body mesh
+          void el.loadModel(cat.gltfUrl, cat.yOffset);
+        } else {
+          // For other types: swap primitive for full GltfElement at same position
+          const pos = el.position.clone();
+          this.state.removeElement(el);
+          void this.placeGltf(cat.gltfUrl, cat.name, cat.assetId, cat.dailyRate, pos);
+        }
+      }
+      this.updateElementCount();
+    };
+    this.placer.onDelete = () => {
+      this.onElementSelected(null);
+      this.updateElementCount();
+    };
     this.placer.onStatusChange = (msg) => this.setStatus(msg);
 
     // Add TransformControls to scene now that both scene and placer exist
@@ -204,12 +267,15 @@ class EditorApp {
   // ── UI wiring ──────────────────────────────────────────────────────────────
 
   private initUI(): void {
-    // Tool buttons
+    // Tool buttons (select + cast/crew quick-place)
     document.querySelectorAll<HTMLButtonElement>(".tool-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const tool = btn.dataset.tool as ToolType;
         document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
+        // Deactivate any selected catalog item when switching tools manually
+        document.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+        this.activeCatalogItem = null;
 
         if (tool === "select") {
           this.placer.cancelTool();
@@ -233,34 +299,84 @@ class EditorApp {
       }
     });
 
+    // Splat vertical offset
+    const offsetSlider = document.getElementById("splat-offset-y") as HTMLInputElement;
+    const offsetLabel = document.getElementById("splat-offset-y-val")!;
+    offsetSlider.addEventListener("input", () => {
+      const val = parseFloat(offsetSlider.value);
+      offsetLabel.textContent = val.toFixed(2);
+      this.state.splatOffset[1] = val;
+      this.applySplatOffset();
+    });
+    document.getElementById("splat-offset-reset")!.addEventListener("click", () => {
+      this.state.splatOffset = [0, 0, 0];
+      offsetSlider.value = "0";
+      offsetLabel.textContent = "0.00";
+      this.applySplatOffset();
+    });
+    document.getElementById("splat-offset-toggle")!.addEventListener("click", () => {
+      const panel = document.getElementById("splat-offset-panel")!;
+      const toggle = document.getElementById("splat-offset-toggle")!;
+      const open = panel.style.display === "none";
+      panel.style.display = open ? "block" : "none";
+      toggle.textContent = (open ? "▼" : "▶") + " Adjust Height";
+    });
+
     // Save / Export
     document.getElementById("save-scene-btn")!.addEventListener("click", () => {
-      this.state.saveToKV();
-      this.setStatus(`Scene saved`);
+      if (!this.state.saveLocal()) {
+        toast("Scene too large — try removing some elements", "error");
+        return;
+      }
+      void this.state.saveToKV();
+      toast("Scene saved", "success");
+      this.setStatus("Scene saved");
     });
     document.getElementById("preview-vr-btn")!.addEventListener("click", () => {
-      this.state.saveToKV();
-      window.location.href = `/?mode=stage4-xr&scene=${this.state.id}`;
+      if (!this.state.saveLocal()) {
+        toast("Scene too large for VR handoff — try removing some elements", "error");
+        return;
+      }
+      void this.state.saveToKV();
+      window.location.href = `/?mode=vr&scene=${this.state.id}`;
     });
     document.getElementById("export-json-btn")!.addEventListener("click", () => {
       this.state.exportJSON();
+      toast("Scene exported as JSON", "success");
+    });
+    document.getElementById("export-pdf-btn")!.addEventListener("click", () => {
+      exportShotListPDF(this.state.toJSON(), this.state.title);
+      toast("Shot list PDF exported", "success");
+    });
+    document.getElementById("clear-scene-btn")!.addEventListener("click", () => {
+      if (this.state.elements.size === 0) {
+        toast("Scene is already empty", "info");
+        return;
+      }
+      if (!confirm("Clear all elements from the scene?")) return;
+      this.state.clearAll();
+      this.placer.selectElement(null);
+      this.updateElementCount();
+      toast("Scene cleared", "success");
+      this.setStatus("Scene cleared");
+    });
+    document.getElementById("clear-elements-btn")!.addEventListener("click", () => {
+      if (!confirm("Clear all elements from this scene? This cannot be undone.")) return;
+      this.placer.selectElement(null);
+      this.state.clearElements();
+      this.setStatus("Scene cleared");
     });
 
-    // GLTF library — add from dropdown
-    document.getElementById("gltf-add-btn")?.addEventListener("click", () => {
-      const select = document.getElementById("gltf-model-select") as HTMLSelectElement;
-      const url = select?.value;
-      const name = select?.options[select.selectedIndex]?.text ?? "Model";
-      if (url) void this.placeGltf(url, name);
-    });
 
     // Delete selected
     document.getElementById("delete-element-btn")!.addEventListener("click", () => {
       const el = this.placer.selected;
       if (el) {
+        const name = el.name;
         this.placer.selectElement(null);
         this.state.removeElement(el);
-        this.setStatus(`Deleted ${el.name}`);
+        toast(`Deleted ${name}`, "info");
+        this.setStatus(`Deleted ${name}`);
       }
     });
 
@@ -269,6 +385,14 @@ class EditorApp {
       btn.addEventListener("click", () => {
         this.setGizmoMode(btn.dataset.gizmo as "translate" | "rotate" | "scale");
       });
+    });
+
+    // Panel toggles (responsive collapse)
+    document.getElementById("left-panel-toggle")?.addEventListener("click", () => {
+      document.getElementById("left-panel")?.classList.toggle("collapsed");
+    });
+    document.getElementById("right-panel-toggle")?.addEventListener("click", () => {
+      document.getElementById("right-panel")?.classList.toggle("collapsed");
     });
 
     // Sequence mode
@@ -291,10 +415,14 @@ class EditorApp {
     window.addEventListener("keydown", (e) => {
       if (e.target instanceof HTMLInputElement) return; // don't steal input focus
 
-      // Arrow keys step through shots in review mode
+      // Arrow keys / Space step through shots in review mode
       if (this.reviewMode) {
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") { this.stepReview(1); return; }
-        if (e.key === "ArrowLeft"  || e.key === "ArrowUp")   { this.stepReview(-1); return; }
+        if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
+          e.preventDefault();
+          this.stepReview(1);
+          return;
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") { this.stepReview(-1); return; }
         if (e.key === "Escape") { this.exitReviewMode(); return; }
       }
 
@@ -307,6 +435,8 @@ class EditorApp {
       if (e.key === "Escape" && this.placer.currentTool !== "select") {
         document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
         document.querySelector('.tool-btn[data-tool="select"]')?.classList.add("active");
+        document.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+        this.activeCatalogItem = null;
         this.container.classList.remove("placing");
       }
     });
@@ -334,26 +464,94 @@ class EditorApp {
     }
   }
 
-  // ── GLTF library ───────────────────────────────────────────────────────────
+  // ── Asset Catalog accordion ────────────────────────────────────────────────
 
-  private async initGltfLibrary(): Promise<void> {
-    const select = document.getElementById("gltf-model-select") as HTMLSelectElement | null;
-    if (!select) return;
+  /** Catalog item the user last clicked — applied to the next placed element. */
+  private activeCatalogItem: {
+    assetId: string;
+    name: string;
+    dailyRate: number;
+    gltfUrl: string | null;
+    yOffset?: number;
+  } | null = null;
+
+  private async initAssetCatalog(): Promise<void> {
+    const container = document.getElementById("asset-catalog-accordion");
+    if (!container) return;
+
+    let catalog;
     try {
-      const res = await fetch("./gltf/index.json");
-      if (!res.ok) return;
-      const data = (await res.json()) as { models: Array<{ name: string; url: string }> };
-      for (const model of data.models) {
-        const opt = document.createElement("option");
-        opt.value = model.url;
-        opt.textContent = model.name;
-        select.appendChild(opt);
-      }
-      if (data.models.length > 0) {
-        (document.getElementById("gltf-add-btn") as HTMLButtonElement).disabled = false;
-      }
+      catalog = await loadAssetCatalog();
     } catch {
-      // No manifest yet — user can still drag & drop
+      container.innerHTML = `<div style="color:#7f1d1d;font-size:9px;padding:6px">Failed to load asset catalog.</div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+
+    for (const category of catalog.categories) {
+      // Category header
+      const header = document.createElement("div");
+      header.className = "cat-header";
+      header.innerHTML = `
+        <span>${category.icon ?? ""}</span>
+        <span>${category.label}</span>
+        <span class="cat-chevron">▶</span>
+      `;
+
+      // Items container
+      const itemsEl = document.createElement("div");
+      itemsEl.className = "cat-items";
+
+      for (const item of category.items) {
+        const row = document.createElement("div");
+        row.className = "cat-item";
+        row.dataset.assetId = item.id;
+        row.dataset.dailyRate = String(item.dailyRate);
+        row.dataset.elementType = category.elementType;
+        row.title = `${item.description}\n${item.notes}`;
+        row.innerHTML = `
+          <span class="cat-item-name">${item.name}</span>
+          <span class="cat-item-rate">$${item.dailyRate}/day</span>
+        `;
+
+        row.addEventListener("click", () => {
+          // Deactivate all other items
+          container.querySelectorAll(".cat-item.active").forEach((el) => el.classList.remove("active"));
+          row.classList.add("active");
+
+          // Store catalog metadata for the next placed element
+          this.activeCatalogItem = {
+            assetId: item.id,
+            name: item.name,
+            dailyRate: item.dailyRate,
+            gltfUrl: item.gltfUrl,
+            yOffset: item.yOffset,
+          };
+
+          // Clear select-tool active state
+          document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
+          this.container.classList.add("placing");
+
+          // Set placer tool to this category's element type
+          const tool = category.elementType as ToolType;
+          this.placer.setTool(tool);
+
+          this.setStatus(`Click in the viewport to place ${item.name}`);
+        });
+
+        itemsEl.appendChild(row);
+      }
+
+      // Toggle open/close on header click
+      header.addEventListener("click", () => {
+        const isOpen = header.classList.contains("open");
+        header.classList.toggle("open", !isOpen);
+        itemsEl.classList.toggle("open", !isOpen);
+      });
+
+      container.appendChild(header);
+      container.appendChild(itemsEl);
     }
   }
 
@@ -399,11 +597,13 @@ class EditorApp {
     });
   }
 
-  async placeGltf(url: string, fileName: string): Promise<void> {
+  async placeGltf(url: string, fileName: string, assetId?: string, dailyRate?: number, position?: THREE.Vector3): Promise<void> {
     const id = crypto.randomUUID();
     const name = fileName.replace(/\.(glb|gltf)$/i, "");
     const el = new GltfElement(id, name, url, fileName);
-    el.setPosition(0, 0, 0);
+    if (assetId) el.setProperty("assetId", assetId);
+    if (dailyRate !== undefined) el.setProperty("dailyRate", dailyRate);
+    el.setPosition(position?.x ?? 0, position?.y ?? 0, position?.z ?? 0);
     this.state.addElement(el);
     this.setStatus(`Loading ${fileName}…`);
     try {
@@ -417,6 +617,21 @@ class EditorApp {
 
   // ── Properties panel ───────────────────────────────────────────────────────
 
+  private wireSceneTitle(): void {
+    const el = document.getElementById("scene-title");
+    if (!el) return;
+    el.textContent = this.state.title;
+    el.addEventListener("blur", () => {
+      this.state.setTitle(el.textContent?.trim() || "Untitled Scene");
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        el.blur();
+      }
+    });
+  }
+
   private toggleSequenceMode(): void {
     this.sequenceMode = !this.sequenceMode;
     const btn = document.getElementById("sequence-mode-btn")!;
@@ -426,6 +641,7 @@ class EditorApp {
       hint.style.display = "block";
       this.placer.cancelTool();
       this.setStatus("Sequence Mode — click cameras in order to assign shot numbers");
+      toast("Sequence Mode — click cameras to assign shot numbers", "info");
     } else {
       btn.classList.remove("active");
       hint.style.display = "none";
@@ -438,6 +654,7 @@ class EditorApp {
     for (const el of this.state.elements.values()) {
       if (el instanceof CameraElement) el.setShotNumber(null);
     }
+    toast("Shot sequence cleared", "info");
     this.setStatus("Shot sequence cleared");
   }
 
@@ -460,6 +677,7 @@ class EditorApp {
     // Sequence mode: clicking a camera assigns the next shot number
     if (this.sequenceMode && el instanceof CameraElement) {
       el.setShotNumber(this.nextShotNumber++);
+      toast(`Shot ${el.shotNumber} → ${el.name}`, "success");
       this.setStatus(`Shot ${el.shotNumber} assigned to ${el.name}`);
     }
 
@@ -589,6 +807,10 @@ class EditorApp {
 
   exitReviewMode(): void {
     this.reviewMode = false;
+    if (this.demoInterval) {
+      clearInterval(this.demoInterval);
+      this.demoInterval = null;
+    }
     document.getElementById("shot-review-panel")!.style.display = "none";
     document.getElementById("review-mode-btn")!.classList.remove("active");
     (document.getElementById("sequence-mode-btn") as HTMLButtonElement).disabled = false;
@@ -631,6 +853,11 @@ class EditorApp {
     document.getElementById("shot-review-number")!.textContent = `Shot ${cam.shotNumber} of ${total}`;
     document.getElementById("shot-review-type")!.textContent = `${cam.shotType || "—"}${groupLabel}`;
     document.getElementById("shot-review-label")!.textContent = cam.shotLabel || cam.name;
+    const posEl = document.getElementById("shot-review-position");
+    if (posEl) {
+      const p = cam.position;
+      posEl.textContent = `X: ${p.x.toFixed(1)}  Y: ${p.y.toFixed(1)}  Z: ${p.z.toFixed(1)}`;
+    }
     document.getElementById("shot-prev-btn")!.toggleAttribute("disabled", this.reviewIndex === 0);
     document.getElementById("shot-next-btn")!.toggleAttribute("disabled", this.reviewIndex === total - 1);
 
@@ -663,7 +890,8 @@ class EditorApp {
   }
 
   async loadSplat(url: string): Promise<void> {
-    this.showLoading(`Loading scene…`);
+    const name = url.split("/").pop() ?? url;
+    this.showLoading(`Loading scene…\n${name}`);
     this.state.setSplatUrl(url);
 
     try {
@@ -697,16 +925,37 @@ class EditorApp {
 
         this.scene.add(splat);
         this.splat = splat;
+        this.applySplatOffset();
+        this.syncOffsetSliders();
       }
 
       this.setStatus(`Scene loaded — start placing elements`);
-      console.log("[Editor] Loaded scene:", url);
+      this.updateElementCount();
+      toast(`Loaded ${name}`, "success");
     } catch (err) {
       console.error("[Editor] Failed to load scene:", err);
       this.setStatus(`Failed to load scene — check the URL`);
+      toast("Failed to load scene — check the URL", "error");
     } finally {
       this.hideLoading();
     }
+  }
+
+  /** Apply stored Y offset on top of the base World Labs position correction. */
+  private applySplatOffset(): void {
+    if (!this.splat) return;
+    const oy = this.state.splatOffset[1];
+    const baseY = this.state.getSplatUrl().includes("sensai") ? 0 : 2.887;
+    this.splat.position.y = baseY + oy;
+  }
+
+  /** Sync the Y slider to the saved offset (called after scene restore). */
+  private syncOffsetSliders(): void {
+    const oy = this.state.splatOffset[1];
+    const slider = document.getElementById("splat-offset-y") as HTMLInputElement | null;
+    const label = document.getElementById("splat-offset-y-val");
+    if (slider) slider.value = String(oy);
+    if (label) label.textContent = Number(oy).toFixed(2);
   }
 
   private loadPanorama(url: string): Promise<void> {
@@ -731,19 +980,22 @@ class EditorApp {
   // ── Loading overlay ────────────────────────────────────────────────────────
 
   showLoading(msg: string): void {
-    this.loadingText.textContent = msg;
-    this.loadingOverlay.classList.add("visible");
+    if (this.loadingText) this.loadingText.textContent = msg;
+    this.loadingOverlay?.classList.add("visible");
   }
 
   hideLoading(): void {
-    this.loadingOverlay.classList.remove("visible");
+    this.loadingOverlay?.classList.remove("visible");
   }
 
   setStatus(msg: string): void {
-    this.statusText.textContent = msg;
-    // Update element count in bottombar
-    const count = this.state?.elements.size ?? 0;
-    this.elementCount.textContent = `${count} element${count === 1 ? '' : 's'}`;
+    if (this.statusMsg) this.statusMsg.textContent = msg;
+  }
+
+  private updateElementCount(): void {
+    if (!this.elementCountEl) return;
+    const n = this.state.elements.size;
+    this.elementCountEl.textContent = n ? ` · ${n} element${n === 1 ? "" : "s"}` : "";
   }
 
   // ── Render loop ────────────────────────────────────────────────────────────
@@ -773,13 +1025,25 @@ class EditorApp {
     this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    // Responsive: collapse panels on narrow viewports
+    const narrow = window.innerWidth < 1200;
+    document.getElementById("left-panel")?.classList.toggle("collapsed", narrow);
+    document.getElementById("right-panel")?.classList.toggle("collapsed", narrow);
   };
 
   dispose(): void {
     cancelAnimationFrame(this.rafId);
     window.removeEventListener("resize", this.onResize);
-    this.placer.detach(this.renderer.domElement);
-    this.renderer.dispose();
+    if (this.demoInterval) {
+      clearInterval(this.demoInterval);
+      this.demoInterval = null;
+    }
+    try {
+      this.placer.detach(this.renderer.domElement);
+      this.renderer.dispose();
+    } catch (e) {
+      console.warn("[Editor] Dispose cleanup:", e);
+    }
   }
 }
 

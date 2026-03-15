@@ -34,6 +34,8 @@ export class AssetPlacer {
   onSelect?: (el: ProductionElement | null) => void;
   onPlace?: (el: ProductionElement) => void;
   onDelete?: (el: ProductionElement) => void;
+  /** Called when the active placement tool should reset (e.g. user pressed Escape). */
+  onToolCancel?: () => void;
   onStatusChange?: (msg: string) => void;
 
   constructor(

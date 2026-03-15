@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "description": "Shot Caller Asset Catalog. Each item carries a dailyRate (USD) so the scene JSON can be parsed by an LLM to estimate per-shot equipment costs.",
+  "categories": [
+    {
+      "id": "cameras",
+      "label": "Cameras",
+      "elementType": "camera",
+      "icon": "🎥",
+      "description": "Cinema cameras for principal photography.",
+      "items": [
+        {
+          "id": "arri-alexa-mini-lf",
+          "name": "ARRI ALEXA Mini LF",
+          "manufacturer": "ARRI",
+          "description": "Large-format 4.5K compact cinema camera. Ideal for handheld, gimbal, and tight-space work.",
+          "dailyRate": 1200,
+          "weeklyRate": 4800,
+          "unit": "body",
+          "gltfUrl": "/models/arri-alexa-mini-lf.glb",
+          "yOffset": 0,
+          "notes": "Requires LF lens set for full sensor coverage."
+        },
+        {
+          "id": "sony-pmw-f5",
+          "name": "Sony PMW-F5",
+          "manufacturer": "Sony",
+          "description": "4K S35 cinema camera with global shutter and modular design. Workhorse for documentary and narrative.",
+          "dailyRate": 450,
+          "weeklyRate": 1800,
+          "unit": "body",
+          "gltfUrl": "/models/sony-pmw-f5.glb",
+          "yOffset": 0,
+          "notes": "Pairs with Sony PL or E-mount cinema primes."
+        }
+      ]
+    },
+    {
+      "id": "lenses",
+      "label": "Lenses",
+      "elementType": "equipment",
+      "icon": "🔭",
+      "description": "Cinema prime and anamorphic lens sets.",
+      "items": [
+        {
+          "id": "arri-ultra-primes",
+          "name": "ARRI/Zeiss Ultra Prime Set (6 lenses)",
+          "manufacturer": "ARRI/Zeiss",
+          "description": "S35 T1.9 prime set (16mm–135mm). Neutral rendering, rugged build. Industry workhorse.",
+          "dailyRate": 600,
+          "weeklyRate": 2400,
+          "unit": "6-lens set",
+          "gltfUrl": null,
+          "notes": "PL mount."
+        },
+        {
+          "id": "atlas-orion-anamorphic",
+          "name": "Atlas Orion 2x Anamorphic Set (5 lenses)",
+          "manufacturer": "Atlas Lens Co.",
+          "description": "2x squeeze anamorphic primes (32mm–100mm) with oval bokeh and horizontal flares.",
+          "dailyRate": 1500,
+          "weeklyRate": 6000,
+          "unit": "5-lens set",
+          "gltfUrl": null,
+          "notes": "Requires 2x de-squeeze on monitors and in post."
+        }
+      ]
+    },
+    {
+      "id": "lighting",
+      "label": "Lighting",
+      "elementType": "light",
+      "icon": "💡",
+      "description": "LED, HMI, and tungsten fixtures. Rates per fixture.",
+      "items": [
+        {
+          "id": "arri-skypanel-s60",
+          "name": "ARRI SkyPanel S60-C",
+          "manufacturer": "ARRI",
+          "description": "Large-format bi-color RGBWW LED soft panel. 1200W equivalent output. The go-to soft source for sets.",
+          "dailyRate": 350,
+          "weeklyRate": 1400,
+          "unit": "fixture",
+          "gltfUrl": null,
+          "notes": "Requires 20A circuit. Accessories (skirt, snapgrid) rented separately."
+        },
+        {
+          "id": "aputure-600d-pro",
+          "name": "Aputure 600D Pro",
+          "manufacturer": "Aputure",
+          "description": "600W daylight LED COB fixture. High output with Bowens mount for modifier compatibility.",
+          "dailyRate": 200,
+          "weeklyRate": 800,
+          "unit": "fixture",
+          "gltfUrl": null,
+          "notes": "Hyper reflector included. Softbox, Fresnel, and barn doors rented separately."
+        }
+      ]
+    },
+    {
+      "id": "grip",
+      "label": "Grip & Support",
+      "elementType": "equipment",
+      "icon": "🎬",
+      "description": "Camera support, dollies, cranes, and gimbal rigs.",
+      "items": [
+        {
+          "id": "chapman-hybrid-dolly",
+          "name": "Chapman Hybrid II Dolly",
+          "manufacturer": "Chapman Leonard",
+          "description": "Full-size studio/location dolly. Runs on dance floor, pipe, or curved track. Industry standard.",
+          "dailyRate": 600,
+          "weeklyRate": 2400,
+          "unit": "dolly",
+          "gltfUrl": null,
+          "notes": "Requires dolly grip operator. Track rented separately at $50/10ft section."
+        },
+        {
+          "id": "dji-ronin-2",
+          "name": "DJI Ronin 2 Gimbal",
+          "manufacturer": "DJI",
+          "description": "Professional 3-axis motorized gimbal supporting up to 30 lbs. Used for smooth handheld movement.",
+          "dailyRate": 400,
+          "weeklyRate": 1600,
+          "unit": "gimbal",
+          "gltfUrl": null,
+          "notes": "Requires operator familiar with 3-axis gimbal operation."
+        }
+      ]
+    },
+    {
+      "id": "sound",
+      "label": "Sound",
+      "elementType": "equipment",
+      "icon": "🎙️",
+      "description": "Audio recording and wireless systems.",
+      "items": [
+        {
+          "id": "lectrosonics-wireless-2ch",
+          "name": "Lectrosonics SMQV Wireless Kit (2-ch)",
+          "manufacturer": "Lectrosonics",
+          "description": "Two-channel digital hybrid wireless system with SMQV transmitters and SRb receivers.",
+          "dailyRate": 300,
+          "weeklyRate": 1200,
+          "unit": "2-channel kit",
+          "gltfUrl": null,
+          "notes": "Includes lavalier mics (DPA 4061 or Sanken COS-11)."
+        },
+        {
+          "id": "dpa-4017b-shotgun",
+          "name": "DPA 4017B Shotgun Mic",
+          "manufacturer": "DPA",
+          "description": "Professional supercardioid shotgun mic. Transparent sound with high rejection of off-axis noise.",
+          "dailyRate": 100,
+          "weeklyRate": 400,
+          "unit": "mic",
+          "gltfUrl": null,
+          "notes": "Pairs with Rycote Softie windscreen and boom pole."
+        }
+      ]
+    },
+    {
+      "id": "expendables",
+      "label": "Expendables",
+      "elementType": "props",
+      "icon": "📦",
+      "description": "On-set monitors, consumables, and misc tools.",
+      "items": [
+        {
+          "id": "production-monitor-17",
+          "name": "SmallHD 1703 17\" Monitor",
+          "manufacturer": "SmallHD",
+          "description": "17-inch 1000-nit HDR production monitor for director and script supervisor video village.",
+          "dailyRate": 200,
+          "weeklyRate": 800,
+          "unit": "monitor",
+          "gltfUrl": null,
+          "notes": "Requires stand and sun shade (rented separately at $50/day)."
+        },
+        {
+          "id": "gel-diffusion-kit",
+          "name": "Gel & Diffusion Kit",
+          "manufacturer": "Rosco / Lee",
+          "description": "Assorted CTO/CTB gels, diffusion materials, and blackwrap. Consumable — not returned.",
+          "dailyRate": 100,
+          "weeklyRate": 400,
+          "unit": "kit",
+          "gltfUrl": null,
+          "notes": "Expendable — price is per-use. Include in production budget."
+        }
+      ]
+    }
+  ]
+}

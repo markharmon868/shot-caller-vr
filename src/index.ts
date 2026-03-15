@@ -9,7 +9,8 @@ import {
   renderHeadsetEmptyShell,
   renderHomeShell,
   renderIntakeShell,
-  renderReviewShell,
+  renderVrShell,
+  renderScoutShell,
 } from "./shells.js";
 
 async function start(): Promise<void> {
@@ -25,10 +26,24 @@ async function start(): Promise<void> {
     return;
   }
 
+  if (mode === "landing") {
+    const { renderLandingShell } = await import("./shells.js");
+    renderLandingShell();
+    return;
+  }
+
   if (mode === "create") {
     renderCreateShell();
     const { startCreate } = await import("./create/CreateApp.js");
     startCreate();
+    return;
+  }
+
+  if (mode === "scout") {
+    renderScoutShell();
+    const { startScout, onGenerateClick } = await import("./scout/ScoutApp.js");
+    (window as unknown as Record<string, unknown>).__scoutGenerate = onGenerateClick;
+    startScout();
     return;
   }
 
@@ -51,19 +66,64 @@ async function start(): Promise<void> {
     return;
   }
 
-  if (mode === "export") {
-    renderExportShell();
-    const sceneId = url.searchParams.get("scene")?.trim() || "demo";
-    const { startExport } = await import("./export/ExportApp.js");
-    await startExport(sceneId);
+  // VR Preview (mode === "vr")
+  renderVrShell();
+  const sceneId = url.searchParams.get("scene")?.trim() || "demo";
+
+  // Build back-to-editor URL preserving scene + splat params
+  const backUrl = new URL("/?mode=editor", window.location.origin);
+  if (sceneId && sceneId !== "demo") backUrl.searchParams.set("scene", sceneId);
+  const splatParam = url.searchParams.get("splat");
+  if (splatParam) backUrl.searchParams.set("splat", splatParam);
+  const backLink = document.getElementById("vr-back-link") as HTMLAnchorElement;
+  if (backLink) backLink.href = backUrl.toString();
+
+  const enterBtn = document.getElementById("vr-enter-btn") as HTMLButtonElement;
+  const errorDiv = document.getElementById("vr-error") as HTMLDivElement;
+  const sceneContainer = document.getElementById("vr-scene") as HTMLDivElement;
+
+  const showError = (msg: string) => {
+    errorDiv.textContent = msg;
+    errorDiv.style.display = "block";
+  };
+
+  const { loadSceneBundle } = await import("./data/sceneStore.js");
+  const { XrReviewApp } = await import("./xrReviewApp.js");
+
+  let bundle;
+  try {
+    bundle = await loadSceneBundle(sceneId);
+  } catch (e) {
+    enterBtn.textContent = "VR Unavailable";
+    showError(`Failed to load scene "${sceneId}". ${e instanceof Error ? e.message : String(e)}`);
     return;
   }
 
-  // stage4-xr, stage5-xr, viewer
-  renderReviewShell();
-  const sceneId = url.searchParams.get("scene")?.trim() || "demo";
-  const { startStageReview } = await import("./review/startStageReview.js");
-  await startStageReview(mode, sceneId);
+  const app = await XrReviewApp.create(sceneContainer, bundle);
+
+  // Check XR support
+  type XrNavigator = Navigator & { xr?: { isSessionSupported(m: string): Promise<boolean> } };
+  const xrSupported = await ((navigator as XrNavigator).xr?.isSessionSupported("immersive-vr") ?? Promise.resolve(false));
+
+  if (xrSupported) {
+    enterBtn.textContent = "Enter VR";
+    enterBtn.disabled = false;
+  } else {
+    enterBtn.textContent = "Enter VR (desktop)";
+    enterBtn.disabled = false;
+  }
+
+  let xrActive = false;
+  enterBtn.addEventListener("click", () => {
+    void app.enterOrExitXR().then(() => {
+      xrActive = !xrActive;
+      enterBtn.textContent = xrActive ? "Exit VR" : (xrSupported ? "Enter VR" : "Enter VR (desktop)");
+    }).catch((err: unknown) => {
+      showError(err instanceof Error ? err.message : "Failed to toggle VR.");
+    });
+  });
+
+  window.addEventListener("beforeunload", () => { app.dispose(); });
 }
 
 void start().catch((error: unknown) => {
