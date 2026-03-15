@@ -21,7 +21,7 @@ interface PipelineJob {
 
 let map: google.maps.Map;
 let panorama: google.maps.StreetViewPanorama;
-let marker: google.maps.Marker;
+let marker: google.maps.marker.AdvancedMarkerElement;
 let svService: google.maps.StreetViewService;
 let activeJobId: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -44,16 +44,18 @@ export function startScout(): void {
   }
   window.initScoutMap = initMap;
   const script = document.createElement("script");
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initScoutMap&libraries=places`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initScoutMap&libraries=places,marker&loading=async`;
   script.async = true;
   script.defer = true;
   script.onerror = () => showError("Failed to load Google Maps. Enable 'Maps JavaScript API' in Google Cloud Console.");
   document.head.appendChild(script);
 }
 
-function initMap(): void {
+async function initMap(): Promise<void> {
   const mapEl = document.getElementById("scout-map") as HTMLDivElement;
   const svEl = document.getElementById("scout-streetview") as HTMLDivElement;
+  const { AdvancedMarkerElement, PinElement } = await window.google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+  const { PlaceAutocompleteElement } = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
 
   map = new window.google.maps.Map(mapEl, {
     center: { lat: 34.0195, lng: -118.7350 }, // Malibu area default
@@ -76,19 +78,17 @@ function initMap(): void {
     visible: false, // hidden until user picks a location
   });
 
-  marker = new window.google.maps.Marker({
+  marker = new AdvancedMarkerElement({
     map,
-    visible: false,
-    draggable: true,
-    icon: {
-      path: window.google.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: "#f59e0b",
-      fillOpacity: 1,
-      strokeColor: "#fff",
-      strokeWeight: 2,
-    },
+    gmpDraggable: true,
+    content: new PinElement({
+      background: "#f59e0b",
+      borderColor: "#ffffff",
+      glyphColor: "#f59e0b",
+      scale: 1.15,
+    }).element,
   });
+  setMarkerVisible(false);
 
   svService = new window.google.maps.StreetViewService();
   map.setStreetView(panorama);
@@ -99,22 +99,35 @@ function initMap(): void {
     setLocation(e.latLng.lat(), e.latLng.lng(), "map_click");
   });
 
-  // Places Autocomplete search box
+  // Places search box
   const searchInput = document.getElementById("scout-search-input") as HTMLInputElement | null;
-  if (searchInput) {
-    const autocomplete = new window.google.maps.places.Autocomplete(searchInput, {
-      fields: ["geometry", "name"],
-    });
-    autocomplete.bindTo("bounds", map);
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry?.location) return;
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
+  if (searchInput?.parentElement) {
+    const searchElement = new PlaceAutocompleteElement();
+    searchElement.id = searchInput.id;
+    searchElement.setAttribute("placeholder", searchInput.placeholder);
+    searchElement.setAttribute("aria-label", "Search address or location");
+    searchElement.style.width = "100%";
+    searchElement.style.display = "block";
+    searchInput.replaceWith(searchElement);
+    searchElement.addEventListener("gmp-select", async (event: Event) => {
+      const selection = event as Event & { placePrediction?: { toPlace?: () => google.maps.places.Place } };
+      const place = selection.placePrediction?.toPlace?.();
+      if (!place) return;
+      await place.fetchFields({ fields: ["displayName", "location", "viewport"] });
+      const location = place.location;
+      if (!location) return;
+      const lat = location.lat();
+      const lng = location.lng();
+      const viewport = place.viewport;
+      if (viewport) {
+        map.fitBounds(viewport);
+      } else {
+        map.setCenter({ lat, lng });
+        map.setZoom(16);
+      }
       map.setCenter({ lat, lng });
-      map.setZoom(16);
       setLocation(lat, lng, "autocomplete");
-      searchInput.blur();
+      searchElement.blur();
     });
   }
 
@@ -137,7 +150,7 @@ function initMap(): void {
     if (pendingLat !== null) {
       pendingLat = lat;
       pendingLng = lng;
-      marker.setPosition({ lat, lng });
+      marker.position = { lat, lng };
       // Update display coords only — do NOT touch confirmedLat/confirmedLng
       // and do NOT write to btn.dataset (those remain the user's explicit pick)
       const el = document.getElementById("scout-coords");
@@ -156,8 +169,8 @@ function setLocation(lat: number, lng: number, source: string): void {
   pendingLat = lat;
   pendingLng = lng;
 
-  marker.setPosition({ lat, lng });
-  marker.setVisible(true);
+  marker.position = { lat, lng };
+  setMarkerVisible(true);
   panorama.setPosition({ lat, lng });
   panorama.setVisible(true);
   map.panTo({ lat, lng });
@@ -199,6 +212,10 @@ function showCoverageWarning(): void {
 function clearCoverageWarning(): void {
   const el = document.getElementById("scout-coverage-warn");
   if (el) el.style.display = "none";
+}
+
+function setMarkerVisible(visible: boolean): void {
+  marker.map = visible ? map : null;
 }
 
 function updateCoords(lat: number, lng: number): void {

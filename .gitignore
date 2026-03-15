@@ -157,3 +157,17 @@ pipeline/data/expanded/*
 !pipeline/data/expanded/.gitkeep
 pipeline/data/output/*
 !pipeline/data/output/.gitkeep
+
+# Local Deno/PDF/export artifacts from call-sheet and scene generation workflows
+deno.lock
+.deno/
+shot-caller-scene*.json
+*-call-sheet.pdf
+test_call_sheet.pdf
+*.debug.json
+public/scenes/[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F].scene.json
+public/scenes/[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F].assets.json
+public/scenes/[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F].world.json
+public/splats/scene-*.spz
+public/splats/scene-*-collider.glb
+public/splats/scene-*-meta.json
