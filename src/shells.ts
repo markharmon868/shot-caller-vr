@@ -966,7 +966,7 @@ export function renderLandingShell(): void {
   removeEditorStyle();
   document.body.className = "";
   document.title = "Shot Caller — AI Production Blocking for Filmmakers";
-  document.body.style.cssText = "margin:0;padding:0;overflow-x:hidden;";
+  document.body.style.cssText = "margin:0;padding:0;overflow-x:hidden;overflow-y:auto;";
   document.body.innerHTML = `
     <style>
       @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
