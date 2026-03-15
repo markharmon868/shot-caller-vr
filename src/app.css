@@ -2298,3 +2298,115 @@ body {
   margin-top: 0.5rem;
   align-self: flex-start;
 }
+
+/* ── Export Report Styles ── */
+
+.shot-caller-body-export {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
+}
+
+.app-root-export {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.export-main {
+  flex: 1;
+  padding: 3rem 2rem;
+}
+
+.export-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.export-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.export-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+  letter-spacing: -0.025em;
+}
+
+.export-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.export-status {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: #60a5fa;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.export-progress {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.export-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 0.3s ease;
+  border-radius: 12px;
+}
+
+.export-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: #ef4444;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.export-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.export-preview-section {
+  margin-top: 3rem;
+}
+
+.export-preview-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.export-preview-frame {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.export-iframe {
+  width: 100%;
+  min-height: 800px;
+  border: none;
+  display: block;
+}

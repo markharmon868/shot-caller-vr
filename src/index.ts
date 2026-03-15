@@ -4,6 +4,7 @@ import { resolveAppMode } from "./routing.js";
 import {
   renderCreateShell,
   renderEditorShell,
+  renderExportShell,
   renderHeadsetEmptyShell,
   renderHomeShell,
   renderIntakeShell,
@@ -45,7 +46,15 @@ async function start(): Promise<void> {
     return;
   }
 
-  // stage4-xr, stage5-xr, viewer, export
+  if (mode === "export") {
+    renderExportShell();
+    const sceneId = url.searchParams.get("scene")?.trim() || "demo";
+    const { startExport } = await import("./export/ExportApp.js");
+    await startExport(sceneId);
+    return;
+  }
+
+  // stage4-xr, stage5-xr, viewer
   renderReviewShell();
   const sceneId = url.searchParams.get("scene")?.trim() || "demo";
   const { startStageReview } = await import("./review/startStageReview.js");

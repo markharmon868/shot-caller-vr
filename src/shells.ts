@@ -798,3 +798,73 @@ export function renderHeadsetEmptyShell(): void {
     </div>
   `;
 }
+
+export function renderExportShell(): void {
+  removeEditorStyle();
+  document.body.className = "shot-caller-body-export";
+  document.title = "Export Report — Shot Caller";
+  document.body.innerHTML = `
+    <div id="app-root" class="app-root-export">
+
+      <!-- ── NAV ── -->
+      <nav class="home-nav">
+        <div class="home-nav-inner">
+          <a href="?" class="home-nav-brand" style="text-decoration:none">
+            <img src="./SensAI-logo.png" alt="SensAI" class="home-nav-logo" />
+            <span class="home-nav-wordmark">Shot Caller</span>
+          </a>
+          <div class="home-nav-links">
+            <a href="?" class="home-nav-link">Home</a>
+            <a href="?mode=editor" class="home-nav-link">Editor</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ── EXPORT MAIN ── -->
+      <main class="export-main">
+        <div class="export-container">
+
+          <div class="export-header">
+            <p class="home-badge">Pre-Production</p>
+            <h1 class="export-title">Export Report</h1>
+            <p class="export-subtitle">Generate a professional pre-production report with screenshots and technical details</p>
+          </div>
+
+          <!-- Status -->
+          <div class="export-status" id="export-status" style="display:none"></div>
+
+          <!-- Progress -->
+          <div class="export-progress" id="export-progress" style="display:none">
+            <div class="export-progress-fill" id="export-progress-fill"></div>
+          </div>
+
+          <!-- Error -->
+          <div class="export-error" id="export-error" style="display:none"></div>
+
+          <!-- Actions -->
+          <div class="export-actions">
+            <button class="home-btn-primary home-btn-lg" id="export-generate-btn" disabled>
+              <span class="home-btn-icon">✦</span> Generate Report
+            </button>
+            <button class="home-btn-secondary home-btn-lg" id="export-preview-btn" disabled>
+              👁️ Preview
+            </button>
+            <button class="home-btn-secondary home-btn-lg" id="export-download-btn" disabled>
+              ⬇️ Download HTML
+            </button>
+          </div>
+
+          <!-- Preview Section -->
+          <div class="export-preview-section" id="export-preview-section" style="display:none">
+            <h2 class="export-preview-title">Report Preview</h2>
+            <div class="export-preview-frame">
+              <iframe id="export-preview-iframe" class="export-iframe"></iframe>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  `;
+}
