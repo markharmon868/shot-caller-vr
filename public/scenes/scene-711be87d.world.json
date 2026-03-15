@@ -1,0 +1,12 @@
+{
+  "sceneId": "scene-711be87d",
+  "version": 1,
+  "unit": "meters",
+  "splatUrl": "/splats/scene-711be87d.spz",
+  "colliderUrl": "/splats/scene-711be87d-collider.glb",
+  "assetCatalogUrl": "/asset-catalog.json",
+  "worldBounds": {
+    "min": [-15, 0, -15],
+    "max": [15, 6, 15]
+  }
+}

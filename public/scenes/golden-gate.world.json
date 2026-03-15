@@ -1,0 +1,12 @@
+{
+  "sceneId": "golden-gate",
+  "version": 1,
+  "unit": "meters",
+  "splatUrl": "/splats/golden-gate-3d.spz",
+  "colliderUrl": "builtin://floor",
+  "assetCatalogUrl": "/asset-catalog.json",
+  "worldBounds": {
+    "min": [-20, 0, -20],
+    "max": [20, 8, 20]
+  }
+}
