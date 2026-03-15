@@ -675,6 +675,35 @@ export function renderCreateShell(): void {
             ></textarea>
           </div>
 
+          <!-- Nano Banana Settings -->
+          <details class="create-settings">
+            <summary class="create-settings-summary">
+              <span class="create-settings-icon">🍌</span>
+              <span class="create-settings-label">Nano Banana Settings</span>
+              <span class="create-settings-hint">(Optional) Enhance images for better quality</span>
+            </summary>
+            <div class="create-settings-content">
+              <p class="create-settings-description">
+                Nano Banana uses Google's Gemini to enhance your images before generation,
+                creating more photorealistic, high-fidelity results. Enter your Google API key below.
+              </p>
+              <div class="create-input-group">
+                <label for="nano-banana-api-key" class="create-input-label">
+                  Google API Key
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" class="create-link">Get API key →</a>
+                </label>
+                <input
+                  type="password"
+                  id="nano-banana-api-key"
+                  class="create-input"
+                  placeholder="Enter your Google API key"
+                />
+                <button id="nano-banana-save-key" class="home-btn-secondary home-btn-sm">Save Key</button>
+              </div>
+              <p class="create-settings-note" id="nano-banana-status"></p>
+            </div>
+          </details>
+
           <!-- Generation status (hidden until generation starts) -->
           <div class="create-card create-status-card" id="create-status-card" style="display:none">
             <div class="create-status-row">

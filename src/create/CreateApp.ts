@@ -4,11 +4,22 @@
  * Handles image upload (drag-and-drop + file picker), text input,
  * form validation, generation request, progress tracking, and
  * the Enter VR / Open Editor transition.
+ *
+ * Integrates Nano Banana for image enhancement before generation.
  */
+
+import {
+  enhanceImages,
+  getNanoBananaApiKey,
+  setNanoBananaApiKey,
+  dataUrlToFile,
+  type EnhancedImage,
+} from "../pipeline/nano-banana.js";
 
 type FilePreview = {
   file: File;
   objectUrl: string;
+  enhanced?: boolean;
 };
 
 const MAX_FILES = 20;
@@ -33,10 +44,14 @@ class CreateApp {
   private vrSection!: HTMLElement;
   private enterVrBtn!: HTMLAnchorElement;
   private openEditorBtn!: HTMLAnchorElement;
+  private apiKeyInput!: HTMLInputElement;
+  private saveKeyBtn!: HTMLButtonElement;
+  private apiKeyStatus!: HTMLElement;
 
   start(): void {
     this.bindElements();
     this.bindEvents();
+    this.loadApiKeyStatus();
   }
 
   private bindElements(): void {
@@ -54,6 +69,9 @@ class CreateApp {
     this.vrSection = document.getElementById("create-vr-section")!;
     this.enterVrBtn = document.getElementById("create-enter-vr") as HTMLAnchorElement;
     this.openEditorBtn = document.getElementById("create-open-editor") as HTMLAnchorElement;
+    this.apiKeyInput = document.getElementById("nano-banana-api-key") as HTMLInputElement;
+    this.saveKeyBtn = document.getElementById("nano-banana-save-key") as HTMLButtonElement;
+    this.apiKeyStatus = document.getElementById("nano-banana-status")!;
   }
 
   private bindEvents(): void {
@@ -89,6 +107,46 @@ class CreateApp {
 
     // Generate button
     this.generateBtn.addEventListener("click", () => this.handleGenerate());
+
+    // API key save button
+    this.saveKeyBtn.addEventListener("click", () => this.handleSaveApiKey());
+  }
+
+  // ── API Key Management ──
+
+  private loadApiKeyStatus(): void {
+    const apiKey = getNanoBananaApiKey();
+    if (apiKey) {
+      this.apiKeyStatus.textContent = "✓ API key saved";
+      this.apiKeyStatus.style.color = "#10b981";
+      this.apiKeyInput.value = "••••••••••••••••";
+    } else {
+      this.apiKeyStatus.textContent = "";
+    }
+  }
+
+  private handleSaveApiKey(): void {
+    const apiKey = this.apiKeyInput.value.trim();
+
+    if (!apiKey) {
+      this.apiKeyStatus.textContent = "⚠ Please enter an API key";
+      this.apiKeyStatus.style.color = "#ef4444";
+      return;
+    }
+
+    // Don't save if it's the masked placeholder
+    if (apiKey === "••••••••••••••••") {
+      this.apiKeyStatus.textContent = "✓ API key already saved";
+      this.apiKeyStatus.style.color = "#10b981";
+      return;
+    }
+
+    setNanoBananaApiKey(apiKey);
+    this.apiKeyStatus.textContent = "✓ API key saved successfully";
+    this.apiKeyStatus.style.color = "#10b981";
+    this.apiKeyInput.value = "••••••••••••••••";
+
+    console.log("🍌 Nano Banana API key saved");
   }
 
   // ── File Management ──
@@ -166,21 +224,37 @@ class CreateApp {
     this.isGenerating = true;
     this.updateGenerateButton();
     this.hideError();
-    this.showStatus("Uploading images…", "Preparing your reference material");
-    this.setProgress(5);
 
     try {
-      // Upload images
-      const uploadedUrls = await this.uploadImages();
-      this.setProgress(30);
-      this.showStatus("Generating world…", "Creating your 3D environment — this may take a minute");
+      // Step 1: Enhance images with Nano Banana (if available)
+      let enhancedFiles = this.files;
+      const apiKey = getNanoBananaApiKey();
 
-      // Request generation
+      if (this.files.length > 0 && apiKey) {
+        this.showStatus("Enhancing images…", "🍌 Nano Banana is refining your images for better quality");
+        this.setProgress(5);
+
+        enhancedFiles = await this.enhanceImagesWithNanoBanana(apiKey);
+        this.setProgress(20);
+      } else if (this.files.length > 0 && !apiKey) {
+        console.warn("Nano Banana API key not set - using original images");
+        this.setProgress(10);
+      } else {
+        this.setProgress(10);
+      }
+
+      // Step 2: Upload images
+      this.showStatus("Uploading images…", "Preparing your reference material");
+      const uploadedUrls = await this.uploadImages(enhancedFiles);
+      this.setProgress(30);
+
+      // Step 3: Generate world
+      this.showStatus("Generating world…", "Creating your 3D environment — this may take a minute");
       const sceneId = await this.requestGeneration(uploadedUrls, this.textInput.value.trim());
       this.setProgress(70);
-      this.showStatus("Finalizing…", "Optimizing the Gaussian Splat for VR");
 
-      // Poll for completion (or simulate)
+      // Step 4: Finalize
+      this.showStatus("Finalizing…", "Optimizing the Gaussian Splat for VR");
       await this.waitForCompletion(sceneId);
       this.setProgress(100);
 
@@ -197,11 +271,53 @@ class CreateApp {
     }
   }
 
-  private async uploadImages(): Promise<string[]> {
-    if (this.files.length === 0) return [];
+  private async enhanceImagesWithNanoBanana(apiKey: string): Promise<FilePreview[]> {
+    const inputFiles = this.files.map((fp) => fp.file);
+
+    const enhanced = await enhanceImages(
+      inputFiles,
+      apiKey,
+      { style: "photorealistic" },
+      (current, total) => {
+        // Update progress during enhancement
+        const progressPct = 5 + Math.round((current / total) * 15);
+        this.setProgress(progressPct);
+        this.showStatus(
+          "Enhancing images…",
+          `🍌 Processing image ${current}/${total} with Nano Banana`,
+        );
+      },
+    );
+
+    // Convert enhanced data URLs back to File objects and create new previews
+    const enhancedPreviews: FilePreview[] = [];
+
+    for (let i = 0; i < enhanced.length; i++) {
+      const enh = enhanced[i];
+      const originalFile = this.files[i].file;
+
+      // Convert enhanced data URL to File
+      const enhancedFile = await dataUrlToFile(
+        enh.enhancedDataUrl,
+        `enhanced-${originalFile.name}`,
+      );
+
+      enhancedPreviews.push({
+        file: enhancedFile,
+        objectUrl: enh.enhancedDataUrl,
+        enhanced: true,
+      });
+    }
+
+    console.log(`✅ Enhanced ${enhancedPreviews.length} images with Nano Banana`);
+    return enhancedPreviews;
+  }
+
+  private async uploadImages(filePreviews: FilePreview[]): Promise<string[]> {
+    if (filePreviews.length === 0) return [];
 
     const formData = new FormData();
-    for (const fp of this.files) {
+    for (const fp of filePreviews) {
       formData.append("images", fp.file);
     }
 
@@ -214,7 +330,7 @@ class CreateApp {
       if (!res.ok) {
         // Fallback: if the endpoint doesn't exist yet, return placeholder URLs
         console.warn("Upload endpoint not available, using local previews");
-        return this.files.map((fp) => fp.objectUrl);
+        return filePreviews.map((fp) => fp.objectUrl);
       }
 
       const data = (await res.json()) as { urls: string[] };
@@ -222,7 +338,7 @@ class CreateApp {
     } catch {
       // Server not available — use local object URLs as fallback
       console.warn("Upload failed, using local previews");
-      return this.files.map((fp) => fp.objectUrl);
+      return filePreviews.map((fp) => fp.objectUrl);
     }
   }
 
