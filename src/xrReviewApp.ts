@@ -1,28 +1,50 @@
 import * as THREE from "three";
 import {
   EnvironmentType,
-  Interactable,
   LocomotionEnvironment,
-  PanelUI,
   SessionMode,
   VisibilityState,
   World,
 } from "@iwsdk/core";
 import { SceneBundle } from "./contracts/stageReview.js";
 import { ReviewSceneLoader } from "./gaussianSplatLoader.js";
-import { PanelSystem } from "./uiPanel.js";
-import { reviewBridge } from "./reviewBridge.js";
+import { createElementById } from "./editor/SceneState.js";
+import type { ProductionElement } from "./editor/elements/ProductionElement.js";
+
+const SCENE_STORAGE_KEY = "shot-caller-scene-demo";
+
+/** Load editor elements from localStorage and add their groups to the scene */
+function loadEditorElements(scene: THREE.Scene): ProductionElement[] {
+  const raw = localStorage.getItem(SCENE_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const data = JSON.parse(raw) as { elements?: Array<{ id: string; type: string; name: string; position: [number, number, number]; rotationY: number; scale?: [number, number, number]; properties: Record<string, unknown> }> };
+    const elements: ProductionElement[] = [];
+    for (const ed of data.elements ?? []) {
+      const el = createElementById(ed.id, ed.type, ed.name);
+      el.setPosition(...ed.position);
+      el.setRotationY(ed.rotationY);
+      if (ed.scale) el.setScale(...ed.scale);
+      for (const [k, v] of Object.entries(ed.properties)) el.setProperty(k, v);
+      scene.add(el.group);
+      elements.push(el);
+    }
+    return elements;
+  } catch {
+    return [];
+  }
+}
 
 export class XrReviewApp {
   private readonly world: World;
-  private readonly bundle: SceneBundle;
   private readonly loader: ReviewSceneLoader;
+  private readonly elements: ProductionElement[];
   private frameId = 0;
 
-  private constructor(world: World, bundle: SceneBundle, loader: ReviewSceneLoader) {
+  private constructor(world: World, loader: ReviewSceneLoader, elements: ProductionElement[]) {
     this.world = world;
-    this.bundle = bundle;
     this.loader = loader;
+    this.elements = elements;
     window.addEventListener("resize", this.handleResize);
   }
 
@@ -54,14 +76,14 @@ export class XrReviewApp {
     world.scene.background = new THREE.Color(0x020617);
     world.camera.position.set(0, 1.6, 0);
     world.scene.add(new THREE.AmbientLight(0xffffff, 1.25));
-    world.registerSystem(PanelSystem);
 
+    // Load splat + collider only — pass empty elements so no proxy wireframes spawn
     const loader = new ReviewSceneLoader({
       renderer: world.renderer,
       scene: world.scene,
       camera: world.camera,
     });
-    await loader.load(bundle);
+    await loader.load({ ...bundle, scene: { ...bundle.scene, elements: [], reviewIssues: [] } });
 
     const collider = loader.getCollider();
     if (collider) {
@@ -73,17 +95,10 @@ export class XrReviewApp {
       }
     }
 
-    const panelEntity = world
-      .createTransformEntity()
-      .addComponent(PanelUI, {
-        config: "./ui/review-hud.json",
-        maxHeight: 0.85,
-        maxWidth: 1.45,
-      })
-      .addComponent(Interactable);
-    panelEntity.object3D?.position.set(0.85, 1.45, -1.4);
+    // Add editor elements (same meshes as the desktop editor)
+    const elements = loadEditorElements(world.scene);
 
-    const app = new XrReviewApp(world, bundle, loader);
+    const app = new XrReviewApp(world, loader, elements);
     app.bindVisibility();
     app.tick();
     return app;
@@ -91,10 +106,6 @@ export class XrReviewApp {
 
   private bindVisibility(): void {
     this.world.visibilityState.subscribe((state) => {
-      reviewBridge.setState({
-        xrActive: state !== VisibilityState.NonImmersive,
-        error: null,
-      });
       if (state !== VisibilityState.NonImmersive) {
         void this.loader.replayAnimation();
       }
@@ -109,12 +120,6 @@ export class XrReviewApp {
 
   private tick = () => {
     this.loader.update();
-    const direction = new THREE.Vector3();
-    this.world.camera.getWorldDirection(direction);
-    this.loader.updateFocusFromRay(this.world.camera.position, direction);
-    reviewBridge.setState({
-      selectedLabel: this.loader.getFocusedElement()?.label ?? null,
-    });
     this.frameId = window.requestAnimationFrame(this.tick);
   };
 
@@ -130,30 +135,13 @@ export class XrReviewApp {
     await this.world.exitXR();
   }
 
-  getFocusedElementLabel(): string | null {
-    return this.loader.getFocusedElement()?.label ?? null;
-  }
-
-  getFocusedElementId(): string | null {
-    return this.loader.getFocusedElement()?.id ?? null;
-  }
-
-  getViewerPose(): { position: [number, number, number]; rotation: [number, number, number] } {
-    const position = this.world.camera.position;
-    const rotation = this.world.camera.rotation;
-    return {
-      position: [position.x, position.y, position.z],
-      rotation: [rotation.x, rotation.y, rotation.z],
-    };
-  }
-
-  syncIssues(): void {
-    this.loader.syncIssues(this.bundle.scene.reviewIssues);
-  }
-
   dispose(): void {
     window.cancelAnimationFrame(this.frameId);
     window.removeEventListener("resize", this.handleResize);
+    for (const el of this.elements) {
+      this.world.scene.remove(el.group);
+      el.dispose();
+    }
     this.loader.dispose();
   }
 }

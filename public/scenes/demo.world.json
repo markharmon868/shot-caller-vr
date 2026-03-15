@@ -2,7 +2,7 @@
   "sceneId": "demo",
   "version": 1,
   "unit": "meters",
-  "splatUrl": "/splats/sensai.spz",
+  "splatUrl": "/splats/sensai-lod.spz",
   "colliderUrl": "builtin://floor",
   "assetCatalogUrl": "/scenes/demo.assets.json",
   "worldBounds": {

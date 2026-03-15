@@ -9,6 +9,518 @@
     <title>Shot Caller</title>
   </head>
   <body>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Shot Caller — Production Blocking Tool</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        margin: 0;
+        background: #0d0221;
+        font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+      }
+
+      #app {
+        display: flex;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* ── Sidebar ───────────────────────────────────────────── */
+      #editor-sidebar {
+        display: none;
+        flex-direction: column;
+        width: 220px;
+        min-width: 220px;
+        background: #120828;
+        border-right: 1px solid #2d1a4a;
+        overflow-y: auto;
+        z-index: 10;
+      }
+      #editor-sidebar.visible { display: flex; }
+
+      .sidebar-header {
+        padding: 16px 14px 12px;
+        border-bottom: 1px solid #2d1a4a;
+      }
+      .sidebar-header h1 {
+        color: #fbbf24;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+      }
+      .sidebar-header p {
+        color: #6b5a8a;
+        font-size: 10px;
+        margin-top: 2px;
+      }
+
+      .sidebar-section {
+        padding: 10px 12px;
+        border-bottom: 1px solid #1a0d33;
+      }
+      .section-title {
+        color: #6b5a8a;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+
+      /* SPZ loader */
+      .spz-row { display: flex; gap: 6px; }
+      #spz-url-input {
+        flex: 1;
+        background: #1a0d33;
+        border: 1px solid #2d1a4a;
+        border-radius: 4px;
+        color: #e2e8f0;
+        padding: 5px 8px;
+        font-size: 10px;
+        outline: none;
+      }
+      #spz-url-input::placeholder { color: #3d2a5a; }
+      #spz-url-input:focus { border-color: #6b5a8a; }
+
+      /* Gizmo mode buttons */
+      .gizmo-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 5px;
+        margin-bottom: 4px;
+      }
+      .gizmo-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 7px 4px;
+        background: #1a0d33;
+        border: 1px solid #2d1a4a;
+        border-radius: 6px;
+        color: #a090bc;
+        font-size: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.12s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .gizmo-btn .icon { font-size: 14px; line-height: 1; }
+      .gizmo-btn:hover { background: #2a1a40; color: #d0c0e8; border-color: #3d2a5a; }
+      .gizmo-btn.active { background: #0a1a30; border-color: #60a5fa; color: #60a5fa; }
+      .gizmo-hint { color: #3d2a5a; font-size: 8px; text-align: center; margin-top: 2px; }
+
+      /* Tool grid */
+      .tool-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+      }
+      .tool-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 9px 6px;
+        background: #1a0d33;
+        border: 1px solid #2d1a4a;
+        border-radius: 6px;
+        color: #a090bc;
+        font-size: 9px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.12s;
+        user-select: none;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .tool-btn:hover { background: #2a1a40; color: #d0c0e8; border-color: #3d2a5a; }
+      .tool-btn.active {
+        background: #2a1a00;
+        border-color: #fbbf24;
+        color: #fbbf24;
+      }
+      .tool-btn .icon { font-size: 16px; line-height: 1; }
+      .tool-btn.wide { grid-column: 1 / -1; flex-direction: row; gap: 8px; padding: 7px 12px; }
+
+      /* Action buttons */
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 7px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.12s;
+        margin-bottom: 5px;
+        background: #1a0d33;
+        border: 1px solid #2d1a4a;
+        color: #a090bc;
+        letter-spacing: 0.3px;
+      }
+      .btn:hover { background: #2a1a40; color: #d0c0e8; }
+      .btn:last-child { margin-bottom: 0; }
+      .btn-primary { background: #2a1a00; border-color: #fbbf24; color: #fbbf24; }
+      .btn-primary:hover { background: #3a2a00; }
+      .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
+      .btn-danger:hover { background: #2a0a0a; }
+      .btn.active { background: #1a0a33; border-color: #a78bfa; color: #a78bfa; }
+
+      /* Properties panel */
+      #properties-section { display: none; }
+      #properties-section.visible { display: block; }
+
+      .prop-row { margin-bottom: 8px; }
+      .prop-label {
+        display: block;
+        color: #6b5a8a;
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .prop-input {
+        width: 100%;
+        background: #1a0d33;
+        border: 1px solid #2d1a4a;
+        border-radius: 4px;
+        color: #e2e8f0;
+        padding: 5px 8px;
+        font-size: 11px;
+        outline: none;
+      }
+      .prop-input:focus { border-color: #fbbf24; }
+      .prop-input[type="range"] {
+        padding: 2px 0;
+        accent-color: #fbbf24;
+        cursor: pointer;
+      }
+      .prop-value {
+        float: right;
+        color: #fbbf24;
+        font-size: 10px;
+      }
+
+      /* Status bar */
+      #status-bar {
+        margin-top: auto;
+        padding: 8px 12px;
+        border-top: 1px solid #1a0d33;
+        color: #3d2a5a;
+        font-size: 9px;
+        line-height: 1.4;
+      }
+
+      /* ── Viewport ──────────────────────────────────────────── */
+      #scene-container {
+        flex: 1;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+      }
+      #scene-container canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      #scene-container.placing { cursor: crosshair; }
+
+      /* Loading overlay */
+      #loading-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(13, 2, 33, 0.88);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 14px;
+        z-index: 20;
+      }
+      #loading-overlay.visible { display: flex; }
+      #loading-text { color: #c4b5d8; font-size: 13px; }
+      #loading-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid #2d1a4a;
+        border-top-color: #fbbf24;
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* Camera PiP preview */
+      #camera-preview-overlay {
+        display: none;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 280px;
+        aspect-ratio: 16 / 9;
+        border: 1px solid rgba(251, 191, 36, 0.6);
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 25;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(0,0,0,0.4);
+      }
+      #preview-label {
+        position: absolute;
+        bottom: 6px;
+        left: 8px;
+        color: #fbbf24;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+        pointer-events: none;
+      }
+      #preview-crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(251, 191, 36, 0.4);
+        font-size: 18px;
+        line-height: 1;
+        pointer-events: none;
+      }
+      /* Corner brackets */
+      #camera-preview-overlay::before,
+      #camera-preview-overlay::after {
+        content: "";
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-color: #fbbf24;
+        border-style: solid;
+        opacity: 0.8;
+      }
+      #camera-preview-overlay::before {
+        top: -1px; left: -1px;
+        border-width: 2px 0 0 2px;
+        border-radius: 2px 0 0 0;
+      }
+      #camera-preview-overlay::after {
+        bottom: -1px; right: -1px;
+        border-width: 0 2px 2px 0;
+        border-radius: 0 0 2px 0;
+      }
+
+      /* Shot review overlay */
+      #shot-review-panel {
+        display: none;
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        align-items: center;
+        gap: 12px;
+        background: rgba(10, 2, 28, 0.92);
+        border: 1px solid #34d399;
+        border-radius: 10px;
+        padding: 10px 16px;
+        z-index: 30;
+        backdrop-filter: blur(8px);
+        min-width: 320px;
+      }
+      #shot-review-info {
+        flex: 1;
+        text-align: center;
+      }
+      #shot-review-number {
+        color: #34d399;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      #shot-review-type {
+        color: #fbbf24;
+        font-size: 10px;
+        margin-top: 2px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      #shot-review-label {
+        color: #c4b5d8;
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .shot-nav-btn {
+        background: #1a0d33;
+        border: 1px solid #34d399;
+        border-radius: 6px;
+        color: #34d399;
+        font-size: 14px;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.1s;
+      }
+      .shot-nav-btn:hover { background: #0a1a10; }
+      .shot-nav-btn:disabled { opacity: 0.3; cursor: default; }
+      .shot-exit-btn {
+        background: none;
+        border: 1px solid #4a3060;
+        border-radius: 6px;
+        color: #6b5a8a;
+        font-size: 10px;
+        padding: 4px 8px;
+        cursor: pointer;
+        transition: all 0.1s;
+      }
+      .shot-exit-btn:hover { border-color: #fca5a5; color: #fca5a5; }
+
+      /* Keyboard hint */
+      #keyboard-hint {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        background: rgba(18, 8, 40, 0.8);
+        border: 1px solid #2d1a4a;
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: #6b5a8a;
+        font-size: 10px;
+        line-height: 1.8;
+        display: none;
+        pointer-events: none;
+      }
+      #keyboard-hint.visible { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+
+      <!-- Editor sidebar — shown only in ?mode=editor (default) -->
+      <div id="editor-sidebar">
+        <div class="sidebar-header">
+          <h1>Shot Caller</h1>
+          <p>Production Blocking Tool</p>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Scene</div>
+          <div class="spz-row">
+            <input id="spz-url-input" type="text" placeholder=".spz URL or paste from pipeline…" />
+          </div>
+          <button id="load-splat-btn" class="btn" style="margin-top:6px">Load Gaussian Scene</button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Place Elements</div>
+          <div class="tool-grid">
+            <button class="tool-btn wide active" data-tool="select">
+              <span class="icon">↖</span> Select / Move
+            </button>
+            <button class="tool-btn" data-tool="camera">
+              <span class="icon">🎥</span> Camera
+            </button>
+            <button class="tool-btn" data-tool="light">
+              <span class="icon">💡</span> Light
+            </button>
+            <button class="tool-btn" data-tool="cast_mark">
+              <span class="icon">✕</span> Cast Mark
+            </button>
+            <button class="tool-btn" data-tool="crew">
+              <span class="icon">🚶</span> Crew
+            </button>
+            <button class="tool-btn" data-tool="equipment">
+              <span class="icon">🎬</span> Equipment
+            </button>
+            <button class="tool-btn" data-tool="props">
+              <span class="icon">📦</span> Prop
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Shot Sequence</div>
+          <button id="sequence-mode-btn" class="btn" style="border-color:#a78bfa;color:#a78bfa;margin-bottom:5px">
+            ◉ Sequence Mode
+          </button>
+          <button id="review-mode-btn" class="btn" style="border-color:#34d399;color:#34d399;margin-bottom:5px">
+            ▶ Review Shots
+          </button>
+          <button id="sequence-reset-btn" class="btn">Clear Sequence</button>
+          <div id="sequence-hint" style="display:none;margin-top:6px;padding:6px 8px;background:#1a0d33;border-radius:4px;border-left:2px solid #a78bfa;color:#a78bfa;font-size:9px;line-height:1.6">
+            Click cameras in shooting order.<br>Each click assigns the next shot #.<br>Click again to re-assign.
+          </div>
+        </div>
+
+        <div class="sidebar-section" id="properties-section">
+          <div class="section-title">Transform</div>
+          <div class="gizmo-row">
+            <button class="gizmo-btn active" data-gizmo="translate">
+              <span class="icon">⟺</span> Move
+            </button>
+            <button class="gizmo-btn" data-gizmo="rotate">
+              <span class="icon">↻</span> Rotate
+            </button>
+            <button class="gizmo-btn" data-gizmo="scale">
+              <span class="icon">⤡</span> Scale
+            </button>
+          </div>
+          <div class="gizmo-hint">W · E · R</div>
+          <div class="section-title" style="margin-top:10px">Properties</div>
+          <div id="properties-panel"></div>
+          <button id="delete-element-btn" class="btn btn-danger" style="margin-top:4px">Delete Element</button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-title">Scene</div>
+          <button id="save-scene-btn" class="btn btn-primary">Save Scene</button>
+          <button id="preview-vr-btn" class="btn" style="border-color:#818cf8;color:#818cf8">Preview in VR ↗</button>
+          <button id="export-json-btn" class="btn">Export JSON</button>
+        </div>
+
+        <div id="status-bar">Ready — load a .spz scene or start placing elements</div>
+      </div>
+
+      <!-- 3D viewport — used by both editor and review modes -->
+      <div id="scene-container">
+        <div id="loading-overlay">
+          <div id="loading-spinner"></div>
+          <p id="loading-text">Loading scene…</p>
+        </div>
+        <!-- Camera PiP preview overlay (border + label only — WebGL renders inside) -->
+        <div id="camera-preview-overlay">
+          <div id="preview-label">Camera 1</div>
+          <div id="preview-crosshair">+</div>
+        </div>
+
+        <!-- Shot review overlay -->
+        <div id="shot-review-panel">
+          <button id="shot-prev-btn" class="shot-nav-btn">&#9664;</button>
+          <div id="shot-review-info">
+            <div id="shot-review-number">Shot 1 of 1</div>
+            <div id="shot-review-type"></div>
+            <div id="shot-review-label"></div>
+          </div>
+          <button id="shot-next-btn" class="shot-nav-btn">&#9654;</button>
+          <button id="shot-review-exit" class="shot-exit-btn">✕ Exit</button>
+        </div>
+
+        <div id="keyboard-hint">
+          Orbit: left drag &nbsp;·&nbsp; Pan: right drag &nbsp;·&nbsp; Zoom: scroll<br>
+          Place: click &nbsp;·&nbsp; Cancel: Escape &nbsp;·&nbsp; Delete: Del/Backspace<br>
+          W = Move &nbsp;·&nbsp; E = Rotate &nbsp;·&nbsp; R = Scale
+        </div>
+      </div>
+
+      <!-- Shell root — used by reviewer HUD (?mode=viewer/stage4-xr/stage5-xr) -->
+      <div id="shell-root"></div>
+
+    </div>
     <script type="module" src="/src/index.ts"></script>
   </body>
   </html>

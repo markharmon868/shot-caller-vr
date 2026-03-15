@@ -5,6 +5,7 @@ import { LightElement } from "./elements/LightElement.js";
 import { CastMarkElement } from "./elements/CastMarkElement.js";
 import { CrewElement } from "./elements/CrewElement.js";
 import { EquipmentElement } from "./elements/EquipmentElement.js";
+import { PropsElement } from "./elements/PropsElement.js";
 
 export interface SceneData {
   id: string;
@@ -30,6 +31,7 @@ function nextName(type: string): string {
     cast_mark: "Actor",
     crew: "Crew",
     equipment: "Equipment",
+    props: "Prop",
     set_dressing: "Set Piece",
   };
   return `${labels[type] ?? type} ${typeCounts[type]}`;
@@ -42,6 +44,7 @@ export function createElementById(id: string, type: string, name: string): Produ
     case "cast_mark": return new CastMarkElement(id, name);
     case "crew":      return new CrewElement(id, name);
     case "equipment": return new EquipmentElement(id, name);
+    case "props":     return new PropsElement(id, name);
     default:          return new CameraElement(id, name);
   }
 }
@@ -76,6 +79,7 @@ export class SceneState {
   get id(): string { return this.sceneId; }
 
   setSplatUrl(url: string): void { this.splatUrl = url; }
+  getSplatUrl(): string { return this.splatUrl; }
 
   addElement(el: ProductionElement): void {
     this.elements.set(el.id, el);
@@ -117,6 +121,7 @@ export class SceneState {
       const el = createElementById(ed.id, ed.type, ed.name);
       el.setPosition(...ed.position);
       el.setRotationY(ed.rotationY);
+      if (ed.scale) el.setScale(...ed.scale);
       for (const [k, v] of Object.entries(ed.properties)) {
         el.setProperty(k, v);
       }
@@ -129,6 +134,8 @@ export class SceneState {
   saveLocal(): void {
     const data = this.toJSON();
     localStorage.setItem(STORAGE_KEY_PREFIX + this.sceneId, JSON.stringify(data));
+    // Bridge: also write elements in SceneBundle format so stage4-xr can read them
+    this.saveBridgeElements(data);
     console.log(`[SceneState] Saved scene ${this.sceneId} to localStorage`);
   }
 
@@ -175,6 +182,87 @@ export class SceneState {
       console.warn("[SceneState] Vercel KV load failed, trying localStorage:", e);
       return this.loadLocal(sceneId);
     }
+  }
+
+  // ── SceneBundle bridge (editor → stage4-xr) ───────────────────────────────
+  // Converts editor elements to the SceneBundle element format and writes them
+  // to localStorage under the key sceneStore reads, so the VR review loads the
+  // same elements you placed in the editor.
+
+  private saveBridgeElements(data: SceneData): void {
+    const kindMap: Record<string, string> = {
+      camera:      "camera",
+      light:       "light",
+      cast_mark:   "castMark",
+      crew:        "crew",
+      equipment:   "equipment",
+      props:       "setDressing",
+      set_dressing:"setDressing",
+    };
+    const assetMap: Record<string, string> = {
+      camera:      "asset-camera",
+      light:       "asset-light",
+      cast_mark:   "asset-cast-mark",
+      crew:        "asset-crew",
+      equipment:   "asset-equipment",
+      props:       "asset-equipment",
+      set_dressing:"asset-equipment",
+    };
+
+    const bundleElements = data.elements.map((el) => {
+      const kind = kindMap[el.type] ?? el.type;
+      const p = el.properties;
+
+      let properties: Record<string, unknown>;
+      switch (el.type) {
+        case "camera":
+          properties = {
+            focalLengthMm: p.focalLength ?? 35,
+            fovDeg: Math.round(
+              (2 * Math.atan(24 / (2 * Number(p.focalLength ?? 35))) * 180) / Math.PI
+            ),
+            rangeMeters: p.fovDistance ?? 4,
+          };
+          break;
+        case "light":
+          properties = {
+            spreadDeg: p.coneAngle ?? 40,
+            rangeMeters: p.coneDistance ?? 3,
+            colorTemperatureKelvin: p.colorTemp ?? 5600,
+          };
+          break;
+        case "cast_mark":
+          properties = { characterName: p.actorName ?? el.name };
+          break;
+        case "crew":
+          properties = { role: p.department ?? "Camera" };
+          break;
+        case "equipment":
+          properties = { clearanceRadiusMeters: 1.0 };
+          break;
+        default:
+          properties = { clearanceRadiusMeters: 1.0 };
+      }
+
+      return {
+        id: el.id,
+        kind,
+        assetId: assetMap[el.type] ?? "asset-equipment",
+        label: el.name,
+        transform: {
+          position: el.position,
+          rotation: [0, el.rotationY, 0],
+          scale: el.scale ?? [1, 1, 1],
+        },
+        properties,
+      };
+    });
+
+    // sceneStore reads from key "shot-caller:elements:{sceneId}"
+    localStorage.setItem(
+      `shot-caller:elements:demo`,
+      JSON.stringify(bundleElements)
+    );
   }
 
   // ── Export helpers ─────────────────────────────────────────────────────────

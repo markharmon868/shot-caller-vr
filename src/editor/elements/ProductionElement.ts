@@ -6,6 +6,7 @@ export interface ElementData {
   name: string;
   position: [number, number, number];
   rotationY: number;
+  scale?: [number, number, number];
   properties: Record<string, unknown>;
 }
 
@@ -50,10 +51,30 @@ export abstract class ProductionElement {
     this.onSelectChanged(selected);
   }
 
+  /** Dim or restore the element for shot review mode */
+  setDimmed(dimmed: boolean): void {
+    this.group.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        const mat = mesh.material as THREE.Material;
+        mat.transparent = dimmed;
+        mat.opacity = dimmed ? 0.15 : 1.0;
+      }
+    });
+  }
+
   protected abstract onSelectChanged(selected: boolean): void;
 
   abstract getProperties(): Record<string, unknown>;
   abstract setProperty(key: string, value: unknown): void;
+
+  setScale(x: number, y: number, z: number): void {
+    this.group.scale.set(x, y, z);
+  }
+
+  getScale(): [number, number, number] {
+    return [this.group.scale.x, this.group.scale.y, this.group.scale.z];
+  }
 
   /** Serialise to plain JSON for Vercel KV / localStorage */
   serialize(): ElementData {
@@ -67,6 +88,7 @@ export abstract class ProductionElement {
         this.group.position.z,
       ],
       rotationY: this.group.rotation.y,
+      scale: this.getScale(),
       properties: this.getProperties(),
     };
   }

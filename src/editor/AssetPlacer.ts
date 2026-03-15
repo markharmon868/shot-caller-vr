@@ -25,6 +25,11 @@ export class AssetPlacer {
   private isDragging = false;
   private dragStart = new THREE.Vector3();
 
+  /** Set to true while TransformControls is dragging so AssetPlacer doesn't also move the element */
+  gizmoActive = false;
+  /** Set to true whenever an element is selected — disables floor-drag repositioning */
+  hasSelection = false;
+
   // Callbacks for the EditorApp to respond to selection changes
   onSelect?: (el: ProductionElement | null) => void;
   onPlace?: (el: ProductionElement) => void;
@@ -113,6 +118,8 @@ export class AssetPlacer {
   private onMouseDown = (e: MouseEvent): void => {
     if (e.button !== 0) return;
     if (this.activeTool !== "select") return;
+    // When an element is selected the TransformControls gizmo handles all movement
+    if (this.gizmoActive || this.hasSelection) return;
 
     this.updatePointer(e);
     const hit = this.raycastElements();
@@ -154,6 +161,7 @@ export class AssetPlacer {
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
     if (e.key === "Escape") {
       this.cancelTool();
       return;

@@ -19,19 +19,17 @@ interface SceneNode {
   highlight: THREE.BoxHelper;
 }
 
-function createBuiltinFloorCollider(bounds: WorldBounds): THREE.Mesh {
-  const width = Math.max(bounds.max[0] - bounds.min[0], 1);
-  const depth = Math.max(bounds.max[2] - bounds.min[2], 1);
+function createBuiltinFloorCollider(_bounds: WorldBounds): THREE.Mesh {
   const collider = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, depth),
+    new THREE.PlaneGeometry(10_000, 10_000),
     new THREE.MeshBasicMaterial({ visible: false }),
   );
   collider.name = "builtin-floor-collider";
   collider.rotation.x = -Math.PI / 2;
   collider.position.set(
-    (bounds.min[0] + bounds.max[0]) / 2,
     0,
-    (bounds.min[2] + bounds.max[2]) / 2,
+    0,
+    0,
   );
   return collider;
 }
@@ -302,6 +300,13 @@ export class ReviewSceneLoader {
     });
     await withTimeout(this.splat.initialized, `Splat ${bundle.world.splatUrl}`);
     this.splat.renderOrder = -10;
+
+    // World Labs splats use OpenCV coords (Y-down) — flip to Three.js (Y-up)
+    if (!bundle.world.splatUrl.includes("sensai")) {
+      this.splat.rotation.x = Math.PI;
+      this.splat.position.y = 2.887;
+    }
+
     this.root.add(this.splat);
 
     this.splatAnimator = new GaussianSplatAnimator(this.splat);
