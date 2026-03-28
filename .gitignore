@@ -162,7 +162,6 @@ pipeline/data/output/*
 deno.lock
 .deno/
 shot-caller-scene*.json
-*-call-sheet.pdf
 test_call_sheet.pdf
 *.debug.json
 public/scenes/[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F].scene.json

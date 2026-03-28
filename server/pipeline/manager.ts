@@ -29,6 +29,11 @@ export interface PipelineJob {
   sceneId: string;
   lat: number;
   lng: number;
+  requestedLat: number;
+  requestedLng: number;
+  streetViewLat?: number;
+  streetViewLng?: number;
+  streetViewPanoId?: string;
   status: JobStatus;
   progress: string;
   splatFilename?: string;
@@ -90,6 +95,8 @@ export function startPipelineJob(lat: number, lng: number): string {
     sceneId,
     lat,
     lng,
+    requestedLat: lat,
+    requestedLng: lng,
     status: "fetching_street_view",
     progress: "Fetching Street View images...",
     createdAt: new Date().toISOString(),
@@ -111,6 +118,11 @@ async function runJob(job: PipelineJob): Promise<void> {
   // Step 1: Fetch Street View images
   update(job, { status: "fetching_street_view", progress: "Fetching 24 Street View images..." });
   const sv = await fetchStreetViewImages({ lat: job.lat, lng: job.lng });
+  update(job, {
+    streetViewLat: sv.location.lat,
+    streetViewLng: sv.location.lng,
+    streetViewPanoId: sv.panoId,
+  });
 
   for (const img of sv.images) {
     const filename = `sv_h${img.heading}_p${img.pitch}.jpg`;
@@ -169,7 +181,21 @@ async function runJob(job: PipelineJob): Promise<void> {
   // Save metadata
   fs.writeFileSync(
     path.join(PUBLIC_SPLATS, `scene-${job.id.slice(0, 8)}-meta.json`),
-    JSON.stringify({ worldId: op.worldId, marbleViewerUrl: op.marbleViewerUrl, metricScaleFactor: op.metricScaleFactor, groundPlaneOffset: op.groundPlaneOffset }, null, 2)
+    JSON.stringify({
+      worldId: op.worldId,
+      marbleViewerUrl: op.marbleViewerUrl,
+      metricScaleFactor: op.metricScaleFactor,
+      groundPlaneOffset: op.groundPlaneOffset,
+      requestedLocation: {
+        lat: job.requestedLat,
+        lng: job.requestedLng,
+      },
+      streetViewLocation: {
+        lat: job.streetViewLat,
+        lng: job.streetViewLng,
+        panoId: job.streetViewPanoId,
+      },
+    }, null, 2)
   );
 
   // Clean up raw images
